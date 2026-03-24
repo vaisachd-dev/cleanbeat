@@ -1,9 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>CleanBeat — Spotify Profanity Filter</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<title>CleanBeat — Spotify Integrated</title>
 <style>
   :root {
     --bg: #0a0a0a;
@@ -613,10 +614,6 @@
     .config-row { grid-template-columns: 1fr; }
     header { flex-direction: column; gap: 16px; align-items: flex-start; }
   }
-body{background:#0a0a0a;color:#eee;font-family:Arial;padding:20px}
-input,button{padding:10px;margin:5px}
-#lyrics{margin-top:20px}
-.bleep{color:#ffcc00}
 </style>
 </head>
 <body>
@@ -719,9 +716,6 @@ input,button{padding:10px;margin:5px}
           <div class="wave-bar"></div>
         </div>
       </div>
-<h2>CleanBeat — Full Spotify Version</h2>
-<input id="clientId" placeholder="Spotify Client ID" />
-<button onclick="connectSpotify()">Connect</button>
 
       <div class="progress-wrap">
         <div class="progress-bar">
@@ -732,9 +726,6 @@ input,button{padding:10px;margin:5px}
           <span id="totalTime">0:00</span>
         </div>
       </div>
-<br/>
-<input id="searchInput" placeholder="Search song" />
-<button onclick="searchTrack()">Play</button>
 
       <div class="controls">
         <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
@@ -765,8 +756,6 @@ input,button{padding:10px;margin:5px}
 
   </div>
 </div>
-<div id="status"></div>
-<div id="lyrics"></div>
 
 <script>
 // ============================
@@ -793,12 +782,6 @@ function getBadWords() {
   return document.getElementById('badWordsList').value
     .split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
 }
-// ================= STATE =================
-let player, deviceId, token;
-let lyricsData=[];
-let scheduledBleeps=[];
-let firedBleeps=new Set();
-let interval;
 
 function containsBadWord(text) {
   const words = getBadWords();
@@ -817,9 +800,6 @@ function censorLine(text) {
     result = result.replace(re, `<span class="bleep-word">🔔 *BLEEP*</span>`);
   });
   return result;
-// ================= UTIL =================
-function setStatus(a,b){
- document.getElementById('status').innerText = b? a+" — "+b : a;
 }
 
 // ============================
@@ -828,11 +808,6 @@ function setStatus(a,b){
 function setStatus(msg, highlight) {
   document.getElementById('statusLog').innerHTML =
     highlight ? `${msg} <span>${highlight}</span>` : msg;
-function normalizeTrackName(name){
- return name.toLowerCase()
-  .replace(/\(.*?\)/g,'')
-  .replace(/from.*$/g,'')
-  .replace(/[^a-z0-9]/g,'');
 }
 
 function setAuthStatus(state, text) {
@@ -841,27 +816,17 @@ function setAuthStatus(state, text) {
   dot.className = 'dot ' + state;
   authText.textContent = text;
 }
-// ================= BAD WORDS =================
-const BAD_WORDS=['fuck','shit','bitch','ass','damn'];
 
 function toggleSettings() {
   const body = document.getElementById('settingsBody');
   const arrow = document.getElementById('settingsArrow');
   body.classList.toggle('open');
   arrow.textContent = body.classList.contains('open') ? '▲' : '▼';
-function containsBadWord(text){
- return BAD_WORDS.some(w=> new RegExp(`\\b${w}\\w*\\b`,'i').test(text));
 }
 
 function formatTime(ms) {
   const s = Math.floor(ms / 1000);
   return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
-function censor(text){
- let out=text;
- BAD_WORDS.forEach(w=>{
-  out = out.replace(new RegExp(`\\b${w}\\w*\\b`,'gi'),'<span class="bleep">[BLEEP]</span>');
- });
- return out;
 }
 
 function triggerBleepFlash() {
@@ -869,11 +834,6 @@ function triggerBleepFlash() {
   f.classList.add('active');
   setTimeout(() => f.classList.remove('active'), 300);
 }
-// ================= AUTH =================
-function connectSpotify(){
- const clientId=document.getElementById('clientId').value;
- const redirect=window.location.href;
- const scopes='streaming user-read-playback-state user-modify-playback-state';
 
 // ============================
 // SPOTIFY AUTH
@@ -886,8 +846,6 @@ function generateRandomString(length) {
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
   return Array.from(array).map(b => chars[b % chars.length]).join('');
- const url=`https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirect)}&scope=${encodeURIComponent(scopes)}`;
- window.location=url;
 }
 
 async function generateCodeChallenge(verifier) {
@@ -896,13 +854,6 @@ async function generateCodeChallenge(verifier) {
   const digest = await crypto.subtle.digest('SHA-256', data);
   return btoa(String.fromCharCode(...new Uint8Array(digest)))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-function init(){
- const hash=window.location.hash;
- if(hash.includes('access_token')){
-  token=new URLSearchParams(hash.substring(1)).get('access_token');
-  window.history.replaceState({}, document.title, window.location.pathname);
-  loadPlayer();
- }
 }
 
 async function connectSpotify() {
@@ -919,10 +870,6 @@ async function connectSpotify() {
   localStorage.setItem('cb_verifier', verifier);
   localStorage.setItem('cb_client_id', clientId);
   localStorage.setItem('cb_redirect_uri', redirectUri);
-function loadPlayer(){
- const script=document.createElement('script');
- script.src='https://sdk.scdn.co/spotify-player.js';
- document.body.appendChild(script);
 
   const scopes = [
     'streaming',
@@ -939,11 +886,7 @@ function loadPlayer(){
     redirect_uri: redirectUri,
     code_challenge_method: 'S256',
     code_challenge: challenge,
- window.onSpotifyWebPlaybackSDKReady=()=>{
-  player=new Spotify.Player({
-   name:'CleanBeat',
-   getOAuthToken:cb=>cb(token)
-});
+  });
 
   window.location.href = `https://accounts.spotify.com/authorize?${params}`;
 }
@@ -963,10 +906,7 @@ async function exchangeCodeForToken(code) {
       redirect_uri: redirectUri,
       code_verifier: verifier,
     })
-  player.addListener('ready',({device_id})=>{
-   deviceId=device_id;
-   setStatus('Connected','Spotify ready');
-});
+  });
 
   const data = await res.json();
   if (data.access_token) {
@@ -996,11 +936,7 @@ async function getValidToken() {
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     })
-  player.addListener('player_state_changed',state=>{
-   if(!state) return;
-   const pos=state.position;
-   checkBleeps(pos);
-});
+  });
   const data = await res.json();
   if (data.access_token) {
     localStorage.setItem('cb_access_token', data.access_token);
@@ -1075,8 +1011,6 @@ async function togglePlay() {
   }
   if (!spotifyPlayer) return;
   await spotifyPlayer.togglePlay();
-  player.connect();
- };
 }
 
 function updatePlayUI() {
@@ -1086,14 +1020,6 @@ function updatePlayUI() {
   if (isPlaying) startProgressTracking();
   else stopProgressTracking();
 }
-// ================= SEARCH =================
-async function searchTrack(){
- const q=document.getElementById('searchInput').value;
- const res=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=1`,{
-  headers:{Authorization:`Bearer ${token}`}
- });
- const data=await res.json();
- const track=data.tracks.items[0];
 
 function startProgressTracking() {
   stopProgressTracking();
@@ -1108,17 +1034,10 @@ function startProgressTracking() {
     checkBleepTriggers(currentPosition);
   }, 500);
 }
- await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
- {
-  method:'PUT',
-  headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
-  body:JSON.stringify({uris:[track.uri]})
- });
 
 function stopProgressTracking() {
   if (progressInterval) clearInterval(progressInterval);
 }
- setStatus('Playing',track.name);
 
 function updateProgressBar() {
   if (!currentTrackDuration) return;
@@ -1126,32 +1045,22 @@ function updateProgressBar() {
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('currentTime').textContent = formatTime(currentPosition);
   highlightActiveLyric(currentPosition);
- await fetchLyrics(track.name,track.artists[0].name);
 }
 
 function prevTrack() {
   if (isDemoMode) return;
   if (spotifyPlayer) spotifyPlayer.previousTrack();
 }
-// ================= LYRICS =================
-async function fetchLyrics(track,artist){
- let data = await tryLRCLIB(track,artist);
- if(!data) data = await tryOVH(track,artist);
- if(!data) data = getLocal(track);
 
 function nextTrack() {
   if (isDemoMode) return;
   if (spotifyPlayer) spotifyPlayer.nextTrack();
 }
- if(!data){ setStatus('Lyrics not found'); return; }
 
 function setVolume(val) {
   userVolume = val / 100;
   if (isDemoMode) return;
   if (spotifyPlayer) spotifyPlayer.setVolume(userVolume);
- lyricsData=data;
- renderLyrics();
- scheduleBleeps();
 }
 
 // ============================
@@ -1188,16 +1097,9 @@ async function searchTrack() {
       },
       body: JSON.stringify({ uris: [track.uri] })
     });
-async function tryLRCLIB(track,artist){
- try{
-  let res=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(track+' '+artist)}`);
-  let arr=await res.json();
-  let m=arr.find(x=>x.syncedLyrics)||arr[0];
-  if(!m) return null;
 
     setStatus('Playing:', track.name);
     document.getElementById('lyricsPanel').classList.add('visible');
-  if(m.syncedLyrics) return parseLRC(m.syncedLyrics);
 
     // Fetch lyrics from LRCLIB (free, no key needed, real timestamps)
     await fetchLyrics(track.name, track.artists[0].name, Math.floor(track.duration_ms / 1000));
@@ -1205,9 +1107,6 @@ async function tryLRCLIB(track,artist){
   } catch(e) {
     setStatus('Error:', e.message);
   }
-  let lines=m.plainLyrics.split('\n').filter(l=>l.trim());
-  return lines.map((t,i)=>({time:i*2000,text:t}));
- }catch(e){return null;}
 }
 
 // ============================
@@ -1293,11 +1192,6 @@ async function fetchLyrics(trackName, artist, durationSecs) {
     scheduleBleeps();
     return;
   }
-async function tryOVH(track,artist){
- try{
-  let res=await fetch(`https://api.lyrics.ovh/v1/${artist}/${track}`);
-  let data=await res.json();
-  if(!data.lyrics) return null;
 
   // 4. Give up gracefully
   setStatus('Lyrics not found.', 'Bad words in this song cannot be filtered.');
@@ -1305,9 +1199,6 @@ async function tryOVH(track,artist){
     { time: 0, text: `♪ ${trackName} — ${artist}` },
     { time: 2000, text: '(Synced lyrics unavailable for this track)' }
   ]);
-  let lines=data.lyrics.split('\n').filter(l=>l.trim());
-  return lines.map((t,i)=>({time:i*2000,text:t}));
- }catch(e){return null;}
 }
 
 // ============================
@@ -1362,16 +1253,6 @@ function getHardcodedLyrics(trackName, artist) {
   };
 
   return library[key] || null;
-function getLocal(track){
- let key=normalizeTrackName(track);
- let lib={
-  'aariaari':[
-   {time:0,text:'bitch you got an ego'},
-   {time:5000,text:'fucking money like casino'}
-  ]
- };
- let k=Object.keys(lib).find(x=>key.includes(x));
- return k?lib[k]:null;
 }
 
 // Parse LRC format: [mm:ss.xx] lyric line
@@ -1393,12 +1274,6 @@ function parseLRC(lrcText) {
   });
 
   return parsed.sort((a, b) => a.time - b.time);
-function parseLRC(lrc){
- return lrc.split('\n').map(l=>{
-  let m=l.match(/\[(\d+):(\d+).(\d+)\](.*)/);
-  if(!m) return null;
-  return {time:(+m[1]*60+ +m[2])*1000,text:m[4]};
- }).filter(Boolean);
 }
 
 function renderLyrics(lines) {
@@ -1410,9 +1285,6 @@ function renderLyrics(lines) {
     return `<div class="lyric-line" id="lyric-${i}" data-time="${line.time}">${censorLine(line.text)}</div>`;
   }).join('');
   document.getElementById('bleepCount').textContent = `${bleepCount} bleep${bleepCount !== 1 ? 's' : ''} detected`;
-// ================= UI =================
-function renderLyrics(){
- document.getElementById('lyrics').innerHTML = lyricsData.map(l=>`<div>${censor(l.text)}</div>`).join('');
 }
 
 function highlightActiveLyric(posMs) {
@@ -1430,9 +1302,6 @@ function highlightActiveLyric(posMs) {
       el.classList.add('past');
     }
   });
-// ================= BLEEP =================
-function scheduleBleeps(){
- scheduledBleeps = lyricsData.filter(l=>containsBadWord(l.text)).map(l=>l.time);
 }
 
 // ============================
@@ -1484,13 +1353,7 @@ function doBleep() {
   if (isDemoMode) {
     // In demo, just show the visual effect
     return;
-function checkBleeps(pos){
- scheduledBleeps.forEach(t=>{
-  if(Math.abs(t-pos)<200 && !firedBleeps.has(t)){
-   firedBleeps.add(t);
-   triggerBleep();
-   setTimeout(()=>firedBleeps.delete(t),3000);
-}
+  }
 
   if (!spotifyPlayer) return;
   spotifyPlayer.setVolume(0);
@@ -1499,7 +1362,6 @@ function checkBleeps(pos){
     spotifyPlayer.setVolume(userVolume);
     setStatus('Monitoring...', '');
   }, 700);
- });
 }
 
 function playBleepSound(mode) {
@@ -1517,11 +1379,6 @@ function playBleepSound(mode) {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.65);
   } catch(e) {}
-function triggerBleep(){
- if(!player) return;
- player.setVolume(0);
- setStatus('BLEEP!');
- setTimeout(()=>player.setVolume(1),500);
 }
 
 // ============================
@@ -1545,8 +1402,6 @@ const DEMO_LYRICS = [
 const DEMO_DURATION = 37000;
 let demoPosition = 0;
 let demoStartTime = 0;
-// ================= INIT =================
-init();
 
 function loadDemo() {
   isDemoMode = true;
