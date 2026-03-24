@@ -851,14 +851,15 @@ function doBleep() {
   setStatus('🔔 BLEEP — bad word muted!', true);
   if (isDemoMode) { setTimeout(function(){ setStatus('Monitoring...'); }, 800); return; }
   if (!player) return;
-  var mode = document.querySelector('input[name=fmode]:checked').value;
+
+  // Mute for 1 second - covers most profane words regardless of timing
   player.setVolume(0);
-  if (mode === 'bleep') playBleepTone();
   setTimeout(function() {
     player.setVolume(userVolume);
     setStatus('Monitoring...');
-  }, 720);
+  }, 1000); // 1 second mute window
 }
+
 
 function playBleepTone() {
   try {
