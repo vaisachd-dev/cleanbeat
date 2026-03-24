@@ -797,8 +797,8 @@ function checkBleeps(posMs) {
     if (diff >= -300 && diff < 300 && !firedSet.has(t)) {
       firedSet.add(t);
       (function(delay) {
-        // Fire 450ms early
-        setTimeout(function() { doBleep(); }, Math.max(0, delay - 450));
+        // Fire 500ms early
+        setTimeout(function() { doBleep(); }, Math.max(0, delay - 500));
       })(diff);
 
       // Allow re-fire if user seeks (5s cooldown)
@@ -822,7 +822,7 @@ function doBleep() {
   setTimeout(function() {
     player.setVolume(userVolume);
     setStatus('Monitoring...');
-  }, 1500); // 1.5 second mute window
+  }, 1100); // 1.1 second mute window
 }
 
 
