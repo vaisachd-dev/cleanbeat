@@ -114,16 +114,16 @@ header{padding:48px 0 32px;display:flex;align-items:center;justify-content:space
   <header>
     <div class="logo">
       <div class="logo-icon">🎵</div>
-      <h1>Clean<span>Beat1</span></h1>
+      <h1>Clean<span>Beat</span></h1>
     </div>
-    <div class="badge">GAMMA</div>
+    <div class="badge">BETA</div>
   </header>
 
   <!-- SETUP -->
   <div class="panel">
     <h2>⚙ Setup</h2>
     <div class="infobox">
-      <strong>⚠ DOESN'T REQUIRE Spotify Premium.</strong> Music plays inside this browser tab so CleanBeat can control volume.<br>
+      <strong>⚠ REQUIRES Spotify Premium.</strong> Music plays inside this browser tab so CleanBeat can control volume.<br>
       Hosted at: <code>https://vaisachd-dev.github.io/cleanbeat/spotify-bleeper.html</code>
     </div>
     <div class="row">
@@ -215,7 +215,7 @@ header{padding:48px 0 32px;display:flex;align-items:center;justify-content:space
       </div>
       <div class="statusbar" id="statusBar">
         <div class="sdot"></div>
-        <span id="statusMsg">Ready — lyrics powered by lrclib.net</span>
+        <span id="statusMsg">Ready — lyrics powered by lrclib.net and CORs</span>
       </div>
     </div>
   </div>
@@ -501,19 +501,31 @@ function updatePlayUI() {
   if (isPlaying) startPosTracking(); else stopPosTracking();
 }
 
-// Poll Spotify position every 250ms for tight bleep sync
+var lastPos = 0;
+var lastPosTime = Date.now();
+
 function startPosTracking() {
   stopPosTracking();
   posInterval = setInterval(async function() {
     if (isDemoMode || !player) return;
     var state = await player.getCurrentState();
     if (!state) return;
+
+    var now = Date.now();
     var pos = state.position;
+
+    // Calculate playback rate
+    var elapsed = now - lastPosTime;
+    var posChange = pos - lastPos;
+
+    lastPos = pos;
+    lastPosTime = now;
+
     updateProgress(pos, state.duration);
     if (lyricsMode === 'synced') checkBleeps(pos);
     highlightLine(pos);
-  }, 250);
-}
+  }, 100);
+}  
 
 function stopPosTracking() {
   if (posInterval) clearInterval(posInterval);
@@ -588,7 +600,7 @@ async function loadLyrics(trackName, artist, durSecs) {
   bleepPoints = [];
   firedSet.clear();
   setSyncBadge('none');
-  setStatus('Ready — lyrics powered by lrclib.net (via CORS proxy)');
+  setStatus('Fetching lyrics from lrclib.net (powered by CORS)...');
   renderLyrics();
 
   // ── 1. LRCLIB exact match ──
@@ -778,11 +790,11 @@ function checkBleeps(posMs) {
   for (var i = 0; i < bleepPoints.length; i++) {
     var t = bleepPoints[i];
     var diff = t - posMs;
-    // Fire within 300ms window, never twice for same point
-    if (diff >= 0 && diff < 300 && !firedSet.has(t)) {
+    // Fire 150ms early
+    if (diff >= -150 && diff < 150 && !firedSet.has(t)) {
       firedSet.add(t);
       (function(delay) {
-        setTimeout(function() { doBleep(); }, delay);
+        setTimeout(function() { doBleep(); }, delay-100);
       })(diff);
       // Allow re-fire if user seeks (5s cooldown)
       (function(bt) {
