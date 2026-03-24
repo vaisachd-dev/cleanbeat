@@ -796,8 +796,8 @@ function checkBleeps(posMs) {
     if (diff >= -100 && diff < 200 && !firedSet.has(t)) {
       firedSet.add(t);
       (function(delay) {
-        // Fire 80ms early
-        setTimeout(function() { doBleep(); }, Math.max(0, delay - 100));
+        // Fire 120ms early
+        setTimeout(function() { doBleep(); }, Math.max(0, delay - 120));
       })(diff);
 
       // Allow re-fire if user seeks (5s cooldown)
