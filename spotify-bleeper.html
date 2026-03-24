@@ -501,19 +501,31 @@ function updatePlayUI() {
   if (isPlaying) startPosTracking(); else stopPosTracking();
 }
 
-// Poll Spotify position every 250ms for tight bleep sync
+var lastPos = 0;
+var lastPosTime = Date.now();
+
 function startPosTracking() {
   stopPosTracking();
   posInterval = setInterval(async function() {
     if (isDemoMode || !player) return;
     var state = await player.getCurrentState();
     if (!state) return;
+
+    var now = Date.now();
     var pos = state.position;
+
+    // Calculate playback rate
+    var elapsed = now - lastPosTime;
+    var posChange = pos - lastPos;
+
+    lastPos = pos;
+    lastPosTime = now;
+
     updateProgress(pos, state.duration);
     if (lyricsMode === 'synced') checkBleeps(pos);
     highlightLine(pos);
   }, 100);
-}
+}  
 
 function stopPosTracking() {
   if (posInterval) clearInterval(posInterval);
