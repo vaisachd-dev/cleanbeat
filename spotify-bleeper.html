@@ -789,8 +789,8 @@ function highlightLine(posMs) {
 // Improved timing: estimates word position within line for accurate bleeping
 
 // Adjust these two values to fine-tune timing:
-var MS_PER_WORD = 350;        // Change this based on speech rate
-var EARLY_FIRE_OFFSET = 1200;  // Change this for execution delay compensation
+var MS_PER_WORD = 400;        // Change this based on speech rate
+var EARLY_FIRE_OFFSET = 2000;  // Change this for execution delay compensation
   
 function checkBleeps(posMs) {
   for (var i = 0; i < bleepPoints.length; i++) {
