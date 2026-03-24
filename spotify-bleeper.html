@@ -163,12 +163,12 @@ function checkBleepTriggers(posMs) {
 }
 
 function triggerBleep() {
-  if (!spotifyPlayer) return;
+  if (!player && !spotifyPlayer) return;
 
-  spotifyPlayer.setVolume(0);
+  (spotifyPlayer || player).setVolume(0);
 
   setTimeout(() => {
-    spotifyPlayer.setVolume(userVolume || 1);
+    (spotifyPlayer || player).setVolume((typeof userVolume !== 'undefined' ? userVolume : 1));
   }, 300);
 }
 
