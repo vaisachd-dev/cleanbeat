@@ -782,20 +782,34 @@ function highlightLine(posMs) {
   });
 }
 
-// ─────────────────────────────────────────
-// BLEEP ENGINE
-// Only runs when lyricsMode === 'synced'
-// ─────────────────────────────────────────
+// Improved timing: polls every 100ms, adjusts firing based on word position in line
 function checkBleeps(posMs) {
   for (var i = 0; i < bleepPoints.length; i++) {
     var t = bleepPoints[i];
     var diff = t - posMs;
-    // Fire 150ms early
-    if (diff >= -150 && diff < 150 && !firedSet.has(t)) {
+
+    // Find the corresponding lyric line
+    var lineIndex = lyricsLines.findIndex(function(line) { return line.time === t; });
+    var isStartOfLine = false;
+
+    if (lineIndex >= 0) {
+      var lineText = lyricsLines[lineIndex].text.trim();
+      var firstWord = lineText.split(/\s+/);
+      // Check if first word is profane
+      isStartOfLine = lineHasBadWord(firstWord);
+    }
+
+    // Adjust timing based on word position
+    var fireOffset = isStartOfLine ? 200 : -100; // +200ms for start, -100ms for middle/end
+    var windowStart = isStartOfLine ? -50 : -150;
+    var windowEnd = isStartOfLine ? 250 : 150;
+
+    if (diff >= windowStart && diff < windowEnd && !firedSet.has(t)) {
       firedSet.add(t);
-      (function(delay) {
-        setTimeout(function() { doBleep(); }, delay-100);
-      })(diff);
+      (function(delay, offset) {
+        setTimeout(function() { doBleep(); }, Math.max(0, delay + offset));
+      })(diff, fireOffset);
+
       // Allow re-fire if user seeks (5s cooldown)
       (function(bt) {
         setTimeout(function() { firedSet.delete(bt); }, 5000);
