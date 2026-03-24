@@ -512,7 +512,7 @@ function startPosTracking() {
     updateProgress(pos, state.duration);
     if (lyricsMode === 'synced') checkBleeps(pos);
     highlightLine(pos);
-  }, 250);
+  }, 100);
 }
 
 function stopPosTracking() {
@@ -778,11 +778,11 @@ function checkBleeps(posMs) {
   for (var i = 0; i < bleepPoints.length; i++) {
     var t = bleepPoints[i];
     var diff = t - posMs;
-    // Fire within 300ms window, never twice for same point
-    if (diff >= 0 && diff < 300 && !firedSet.has(t)) {
+    // Fire 150ms early
+    if (diff >= -150 && diff < 150 && !firedSet.has(t)) {
       firedSet.add(t);
       (function(delay) {
-        setTimeout(function() { doBleep(); }, delay);
+        setTimeout(function() { doBleep(); }, delay-100);
       })(diff);
       // Allow re-fire if user seeks (5s cooldown)
       (function(bt) {
