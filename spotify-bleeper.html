@@ -670,11 +670,13 @@ lines.forEach(function(line) {
       for (var b = 0; b < bad.length; b++) {
         if (normalized === bad[b] || normalized.startsWith(bad[b])) {
           // Add separate entry for each profane word
-          bleepPoints.push({
-            time: line.time,
-            id: bleepId++,
-            word: words[w]
-          });
+          // Stagger bleeps slightly for multiple words on same line
+var wordOffset = (w * 200); // 200ms offset per word position
+bleepPoints.push({
+  time: line.time + wordOffset,
+  id: bleepId++,
+  word: words[w]
+});
           break;
         }
       }
