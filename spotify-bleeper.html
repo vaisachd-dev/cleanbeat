@@ -787,33 +787,18 @@ function highlightLine(posMs) {
 // Only runs when lyricsMode === 'synced'
 // ─────────────────────────────────────────
 // Improved timing: polls every 100ms, fires early with precise window
-// Improved timing: polls every 100ms, adjusts firing based on word position in line
 function checkBleeps(posMs) {
   for (var i = 0; i < bleepPoints.length; i++) {
     var t = bleepPoints[i];
     var diff = t - posMs;
 
-    // Find the corresponding lyric line
-    var lineIndex = lyricsLines.findIndex(function(line) { return line.time === t; });
-    var isStartOfLine = false;
-
-    if (lineIndex >= 0) {
-      var lineText = lyricsLines[lineIndex].text.trim();
-      var firstWord = lineText.split(/\s+/);
-      // Check if first word is profane
-      isStartOfLine = lineHasBadWord(firstWord);
-    }
-
-    // Adjust timing based on word position
-    var fireOffset = isStartOfLine ? 200 : -100; // +200ms for start, -100ms for middle/end
-    var windowStart = isStartOfLine ? -50 : -150;
-    var windowEnd = isStartOfLine ? 250 : 150;
-
-    if (diff >= windowStart && diff < windowEnd && !firedSet.has(t)) {
+    // Fire within 200ms window, 80ms early
+    if (diff >= -100 && diff < 200 && !firedSet.has(t)) {
       firedSet.add(t);
-      (function(delay, offset) {
-        setTimeout(function() { doBleep(); }, Math.max(0, delay + offset));
-      })(diff, fireOffset);
+      (function(delay) {
+        // Fire 80ms early
+        setTimeout(function() { doBleep(); }, Math.max(0, delay - 100));
+      })(diff);
 
       // Allow re-fire if user seeks (5s cooldown)
       (function(bt) {
@@ -822,6 +807,7 @@ function checkBleeps(posMs) {
     }
   }
 }
+
 
 function doBleep() {
   if (!isPlaying) return;
