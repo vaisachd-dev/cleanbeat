@@ -650,7 +650,7 @@
       </div>
     </div>
     <div class="auth-section">
-      <button class="btn btn-primary" id="connectBtn" onclick="connectSpotify()">
+      <button class="btn btn-primary" id="connectBtn" onclick="connectSpotify().catch(e => alert('Error: ' + e.message))">
         <span>▶</span> Connect Spotify
       </button>
       <button class="btn btn-secondary" onclick="loadDemo()">
