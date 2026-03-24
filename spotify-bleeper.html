@@ -787,6 +787,11 @@ function highlightLine(posMs) {
 // Only runs when lyricsMode === 'synced'
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
+
+// Adjust these two values to fine-tune timing:
+var MS_PER_WORD = 300;        // Change this based on speech rate
+var EARLY_FIRE_OFFSET = 450;  // Change this for execution delay compensation
+  
 function checkBleeps(posMs) {
   for (var i = 0; i < bleepPoints.length; i++) {
     var t = bleepPoints[i];
@@ -817,7 +822,7 @@ function checkBleeps(posMs) {
       // Estimate when the word plays based on its position
       // Assume average speaking rate: ~3 words per second = 333ms per word
       if (profaneWordIndex >= 0) {
-        wordDelay = profaneWordIndex * 333; // milliseconds
+        wordDelay = profaneWordIndex * MS_PER_WORD; // milliseconds
       }
     }
 
@@ -829,7 +834,7 @@ function checkBleeps(posMs) {
     if (adjustedDiff >= -100 && adjustedDiff < 200 && !firedSet.has(t)) {
       firedSet.add(t);
       (function(delay) {
-        setTimeout(function() { doBleep(); }, Math.max(0, delay - 150));
+        setTimeout(function() { doBleep(); }, Math.max(0, delay - EARLY_FIRE_OFFSET));
       })(adjustedDiff);
 
       // Allow re-fire if user seeks (5s cooldown)
