@@ -1209,7 +1209,11 @@ function getHardcodedLyrics(trackName, artist) {
   const key = trackName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   const library = {
-    // Match any track name containing "aariaari"
+    function getHardcodedLyrics(trackName, artist) {
+  const key = trackName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  console.log('Looking up lyrics for key:', key);
+
+  const library = {
     'aariaari': [
       { time: 0,     text: "Ghir-ghir badal barsange" },
       { time: 4000,  text: "Jad teer milan do raahvan de" },
@@ -1253,9 +1257,16 @@ function getHardcodedLyrics(trackName, artist) {
     ]
   };
 
-  // Partial match — check if any library key appears inside the track name key
-  const matchedKey = Object.keys(library).find(k => key.includes(k) || k.includes(key));
-  return matchedKey ? library[matchedKey] : null;
+  // Check every library key — does the song title contain it?
+  for (const libKey of Object.keys(library)) {
+    if (key.includes(libKey)) {
+      console.log('Matched library key:', libKey);
+      return library[libKey];
+    }
+  }
+
+  console.log('No match found for key:', key);
+  return null;
 }
 
 // Parse LRC format: [mm:ss.xx] lyric line
