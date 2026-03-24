@@ -215,7 +215,7 @@ header{padding:48px 0 32px;display:flex;align-items:center;justify-content:space
       </div>
       <div class="statusbar" id="statusBar">
         <div class="sdot"></div>
-        <span id="statusMsg">Ready — lyrics powered by lrclib.net</span>
+        <span id="statusMsg">Ready — lyrics powered by lrclib.net and CORs</span>
       </div>
     </div>
   </div>
@@ -588,13 +588,13 @@ async function loadLyrics(trackName, artist, durSecs) {
   bleepPoints = [];
   firedSet.clear();
   setSyncBadge('none');
-  setStatus('Fetching lyrics from lrclib.net...');
+  setStatus('Fetching lyrics from lrclib.net (powered by CORS)...');
   renderLyrics();
 
   // ── 1. LRCLIB exact match ──
   try {
     var r = await timedFetch(
-      'https://lrclib.net/api/get?artist_name=' + encodeURIComponent(artist) +
+      'https://corsproxy.io/?https://lrclib.net/api/get?artist_name=' + encodeURIComponent(artist) +
       '&track_name=' + encodeURIComponent(trackName) +
       '&duration=' + durSecs
     );
@@ -612,7 +612,7 @@ async function loadLyrics(trackName, artist, durSecs) {
   // ── 2. LRCLIB search fallback ──
   try {
     var r2 = await timedFetch(
-      'https://lrclib.net/api/search?q=' + encodeURIComponent(trackName + ' ' + artist)
+      'https://corsproxy.io/?https://lrclib.net/api/search?q=' + encodeURIComponent(trackName + ' ' + artist)
     );
     if (r2.ok) {
       var results = await r2.json();
