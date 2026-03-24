@@ -495,6 +495,34 @@ async function togglePlay() {
   if (player) await player.togglePlay();
 }
 
+function prevTrack() {
+  if (player) {
+    player.previousTrack().then(function() {
+      console.log('Skipped to previous track');
+      // Reset bleep tracking for new track
+      firedSet.clear();
+      bleepCount = 0;
+      updateBleepCount();
+    }).catch(function(err) {
+      console.error('Error skipping to previous track:', err);
+    });
+  }
+}
+
+function nextTrack() {
+  if (player) {
+    player.nextTrack().then(function() {
+      console.log('Skipped to next track');
+      // Reset bleep tracking for new track
+      firedSet.clear();
+      bleepCount = 0;
+      updateBleepCount();
+    }).catch(function(err) {
+      console.error('Error skipping to next track:', err);
+    });
+  }
+}
+  
 function updatePlayUI() {
   document.getElementById('playBtn').textContent = isPlaying ? '⏸' : '▶';
   document.getElementById('waveform').classList.toggle('paused', !isPlaying);
