@@ -795,9 +795,9 @@ function checkBleeps(posMs) {
     if (lineIndex >= 0) {
       var lineText = lyricsLines[lineIndex].text.trim();
       var words = lineText.split(/\s+/);
-      // Check if first word is profane (pass the first word as string, not array)
-      if (words.length > 0) {
-        isStartOfLine = lineHasBadWord(words);
+      // Check if first word is profane - pass just the first word as a string
+      if (words.length > 0 && lineHasBadWord(words)) {
+        isStartOfLine = true;
       }
     }
 
