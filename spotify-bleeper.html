@@ -1116,14 +1116,26 @@ async function fetchLyrics(trackName, artist, durationSecs) {
   setStatus('Fetching synced lyrics...', 'lrclib.net');
   lyricsData = [];
 
-  const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(trackName)}&duration=${durationSecs}`;
+  // Helper: fetch with timeout
+  async function fetchWithTimeout(url, ms = 6000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), ms);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(id);
+      return res;
+    } catch(e) {
+      clearTimeout(id);
+      throw e;
+    }
+  }
 
+  // 1. Try exact match with duration
   try {
-    const res = await fetch(url);
+    const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(trackName)}&duration=${durationSecs}`;
+    const res = await fetchWithTimeout(url);
     if (res.ok) {
       const data = await res.json();
-
-      // Prefer synced lyrics (LRC format with timestamps)
       if (data.syncedLyrics) {
         setStatus('Synced lyrics loaded!', '✓ Millisecond-accurate timestamps');
         lyricsData = parseLRC(data.syncedLyrics);
@@ -1131,8 +1143,6 @@ async function fetchLyrics(trackName, artist, durationSecs) {
         scheduleBleeps();
         return;
       }
-
-      // Fallback: plain lyrics (no timestamps — evenly distribute)
       if (data.plainLyrics) {
         setStatus('Plain lyrics loaded.', '~ Estimated timestamps');
         const lines = data.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -1144,18 +1154,28 @@ async function fetchLyrics(trackName, artist, durationSecs) {
       }
     }
   } catch(e) {
-    console.warn('LRCLIB error:', e);
+    setStatus('Trying search fallback...', '');
   }
 
-  // Last resort: search endpoint (looser match)
+  // 2. Try search (looser match, no duration required)
   try {
-    const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(trackName + ' ' + artist)}`);
-    if (searchRes.ok) {
-      const results = await searchRes.json();
-      const match = results.find(r => r.syncedLyrics) || results[0];
+    const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(trackName + ' ' + artist)}`;
+    const res = await fetchWithTimeout(searchUrl);
+    if (res.ok) {
+      const results = await res.json();
+      const match = results.find(r => r.syncedLyrics) || results.find(r => r.plainLyrics);
       if (match?.syncedLyrics) {
-        setStatus('Synced lyrics found via search!', '✓ Timestamps ready');
+        setStatus('Synced lyrics found!', '✓ Timestamps ready');
         lyricsData = parseLRC(match.syncedLyrics);
+        renderLyrics(lyricsData);
+        scheduleBleeps();
+        return;
+      }
+      if (match?.plainLyrics) {
+        setStatus('Plain lyrics found.', '~ Estimated timestamps');
+        const lines = match.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const timePerLine = (durationSecs * 1000) / lines.length;
+        lyricsData = lines.map((text, i) => ({ time: Math.floor(i * timePerLine), text }));
         renderLyrics(lyricsData);
         scheduleBleeps();
         return;
@@ -1163,11 +1183,76 @@ async function fetchLyrics(trackName, artist, durationSecs) {
     }
   } catch(e) {}
 
-  setStatus('Lyrics not found.', 'Try a different song.');
+  // 3. Hardcoded fallback for known songs not yet in lrclib
+  const hardcoded = getHardcodedLyrics(trackName, artist);
+  if (hardcoded) {
+    setStatus('Lyrics loaded from local library.', '~ Estimated timestamps');
+    lyricsData = hardcoded;
+    renderLyrics(lyricsData);
+    scheduleBleeps();
+    return;
+  }
+
+  // 4. Give up gracefully
+  setStatus('Lyrics not found.', 'Bad words in this song cannot be filtered.');
   renderLyrics([
     { time: 0, text: `♪ ${trackName} — ${artist}` },
     { time: 2000, text: '(Synced lyrics unavailable for this track)' }
   ]);
+}
+
+// ============================
+// HARDCODED LYRICS LIBRARY
+// For new songs not yet in lrclib
+// ============================
+function getHardcodedLyrics(trackName, artist) {
+  const key = trackName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  const library = {
+    'aariaari': [
+      { time: 0,     text: "Ghir-ghir badal barsange" },
+      { time: 4000,  text: "Jad teer milan do raahvan de" },
+      { time: 7000,  text: "You better watch your head" },
+      { time: 10000, text: "Ghir-ghir badal barsange" },
+      { time: 13000, text: "Hun badle rukh havaavan de" },
+      { time: 16000, text: "You better watch your head" },
+      { time: 19000, text: "Aayi ankhan te aayi meri sardari" },
+      { time: 23000, text: "Aari-aari-aari" },
+      { time: 26000, text: "Aari-aari-aari, ve teri-meri ik jindri" },
+      { time: 30000, text: "Laigi lut jind saari ve teri-meri" },
+      { time: 34000, text: "Aari-aari-aari" },
+      { time: 37000, text: "O mainu dil di baazi agge" },
+      { time: 40000, text: "Koi dard bada na, koi dard bada na lagge" },
+      { time: 44000, text: "Saari duniyadaari thagge" },
+      { time: 47000, text: "Meri jaan tere ton vaari" },
+      { time: 50000, text: "Aari-aari-aari" },
+      { time: 53000, text: "Aari-aari-aari, ve teri-meri ik jindri" },
+      { time: 57000, text: "Laigi lut jind saari ve teri-meri" },
+      { time: 61000, text: "Aari-aari-aari" },
+      { time: 65000, text: "Yo, my father raised me a winner" },
+      { time: 68000, text: "If I kill for my people, it don't make me a sinner" },
+      { time: 72000, text: "From the coast to the plains, everybody knows the name" },
+      { time: 76000, text: "I'm coming for 'em, we got bills to maintain" },
+      { time: 80000, text: "Bitch, you got an ego, shouldn't fuck with me tho" },
+      { time: 84000, text: "I make all this money like I'm running a casino" },
+      { time: 88000, text: "G code, got that power in my genome" },
+      { time: 92000, text: "Cut the bluff, can you stand up? What's between those?" },
+      { time: 96000, text: "Aari-aari-aari" },
+      { time: 99000, text: "Aari-aari-aari, ve teri-meri ik jindri" },
+      { time: 103000, text: "Laigi lut jind saari ve teri-meri" },
+      { time: 107000, text: "Aari-aari-aari" },
+      { time: 111000, text: "O mainu dil di baazi agge" },
+      { time: 114000, text: "Koi dard bada na, koi dard bada na lagge" },
+      { time: 118000, text: "Saari duniyadaari thagge" },
+      { time: 121000, text: "Meri jaan tere ton vaari" },
+      { time: 124000, text: "Aari-aari-aari" },
+      { time: 127000, text: "Aari-aari-aari, ve teri-meri ik jindri" },
+      { time: 131000, text: "Laigi lut jind saari ve teri-meri" },
+      { time: 135000, text: "Aari-aari-aari" },
+    ]
+  };
+
+  return library[key] || null;
 }
 
 // Parse LRC format: [mm:ss.xx] lyric line
