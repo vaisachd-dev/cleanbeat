@@ -655,9 +655,32 @@ function applyLyrics(mode, lines, trackName, artist) {
 
   if (mode === 'synced') {
     // Build bleep schedule — only from synced timestamps
-    bleepPoints = lines
-      .filter(function(l){ return lineHasBadWord(l.text); })
-      .map(function(l){ return l.time; });
+    // Updated to handle multiple profane words per line
+bleepPoints = [];
+var bleepId = 0;
+
+lines.forEach(function(line) {
+  if (lineHasBadWord(line.text)) {
+    // Count individual profane words in this line
+    var words = line.text.toLowerCase().split(/\s+/);
+    var bad = getBadWords();
+
+    for (var w = 0; w < words.length; w++) {
+      var normalized = words[w].replace(/[^a-z]/g, '');
+      for (var b = 0; b < bad.length; b++) {
+        if (normalized === bad[b] || normalized.startsWith(bad[b])) {
+          // Add separate entry for each profane word
+          bleepPoints.push({
+            time: line.time,
+            id: bleepId++,
+            word: words[w]
+          });
+          break;
+        }
+      }
+    }
+  }
+});
     setSyncBadge('synced');
     setStatus('Synced lyrics loaded — filter armed with ' + bleepPoints.length + ' bleep point(s).');
   } else {
@@ -789,13 +812,14 @@ function highlightLine(posMs) {
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
   for (var i = 0; i < bleepPoints.length; i++) {
-    var t = bleepPoints[i];
+    var bleep = bleepPoints[i];
+    var t = bleep.time;
     var diff = t - posMs;
 
     // Wider detection window: -300ms to +300ms
     // Fire 350ms early to catch beginning-of-line words
-    if (diff >= -300 && diff < 300 && !firedSet.has(t)) {
-      firedSet.add(t);
+    if (diff >= -300 && diff < 300 && !firedSet.has(bleep.id)) {
+  firedSet.add(bleep.id);
       (function(delay) {
         // Fire 500ms early
         setTimeout(function() { doBleep(); }, Math.max(0, delay - 500));
@@ -804,11 +828,10 @@ function checkBleeps(posMs) {
       // Allow re-fire if user seeks (5s cooldown)
       (function(bt) {
         setTimeout(function() { firedSet.delete(bt); }, 5000);
-      })(t);
+      })(bleep.id);
     }
   }
 }
-
 
 function doBleep() {
   if (!isPlaying) return;
