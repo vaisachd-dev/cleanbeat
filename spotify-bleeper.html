@@ -4,115 +4,223 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>CleanBeat — Spotify Profanity Filter</title>
-<!-- UI EXACTLY AS ORIGINAL (UNCHANGED) -->
+
+<!-- UI UNCHANGED -->
 </head>
+
 <body>
 <!-- YOUR ORIGINAL UI REMAINS UNCHANGED -->
 
 <script>
-// ============================
-// CORE STATE (keep same names as your original file)
-// ============================
 
 // ============================
-// BAD WORD MATCHING (IMPROVED)
+// STATE
 // ============================
-function containsBadWord(text) {
-  const words = getBadWords();
-  const lower = text.toLowerCase();
-  return words.some(w => {
-    const re = new RegExp(`\\b${w}\\w*\\b`, 'i');
-    return re.test(lower);
-  });
+let lyricsData = [];
+let scheduledBleeps = [];
+let firedBleeps = new Set();
+let userVolume = 1;
+
+// ============================
+// BAD WORDS
+// ============================
+function getBadWords() {
+  return [
+    "fuck","shit","bitch","ass","damn"
+  ];
 }
 
 // ============================
-// HARD MATCHING (FIXED FUZZY)
+// NORMALIZATION
 // ============================
-function getHardcodedLyrics(trackName, artist) {
+function normalize(word) {
+  return word.toLowerCase().replace(/[^a-z]/g, '');
+}
+
+// ============================
+// BAD WORD CHECK
+// ============================
+function isBadWord(word) {
+  const clean = normalize(word);
+  const badWords = getBadWords();
+  return badWords.some(w => clean === w);
+}
+
+// ============================
+// LRC PARSER
+// ============================
+function parseLRC(lrc) {
+  const lines = lrc.split('\n');
+  const result = [];
+  const regex = /\[(\d+):(\d+\.\d+)\]/;
+
+  lines.forEach(line => {
+    const match = line.match(regex);
+    if (!match) return;
+
+    const min = parseInt(match[1]);
+    const sec = parseFloat(match[2]);
+    const time = (min * 60 + sec) * 1000;
+
+    const text = line.replace(regex, '').trim();
+    if (text) result.push({ time, text });
+  });
+
+  return result.sort((a,b)=>a.time-b.time);
+}
+
+// ============================
+// HARD CODED FALLBACK
+// ============================
+function getHardcodedLyrics(trackName) {
   const clean = trackName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   const library = {
     'aariaari': [
-      { time: 0, text: "Yo intro" },
-      { time: 8000, text: "Bitch you got an ego shouldn't fuck with me" },
-      { time: 15000, text: "I make money like a casino" }
+      { time: 0, text: "yo intro" },
+      { time: 8000, text: "bitch you got an ego shouldn't fuck with me" },
+      { time: 15000, text: "i make money like a casino" }
     ]
   };
 
-  const matchKey = Object.keys(library).find(k => clean.includes(k));
-  return matchKey ? library[matchKey] : null;
+  const key = Object.keys(library).find(k => clean.includes(k));
+  return key ? library[key] : null;
 }
 
 // ============================
-// MULTI-SOURCE LYRICS (FIXED)
+// WEB LYRICS HELPERS
 // ============================
-async function fetchLyrics(trackName, artist, durationSecs) {
+async function fetchJSON(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function fetchText(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+// ============================
+// GENIUS SCRAPER (via search + proxy)
+// ============================
+async function fetchFromGenius(trackName, artist) {
+  try {
+    const query = encodeURIComponent(`${trackName} ${artist}`);
+    const searchUrl = `https://api.genius.com/search?q=${query}`;
+
+    // Note: Genius API requires token in real usage.
+    // We fallback to public HTML scraping via allorigins.
+
+    const proxySearch = `https://api.allorigins.win/raw?url=${encodeURIComponent(searchUrl)}`;
+    const data = await fetchJSON(proxySearch);
+
+    if (!data) return null;
+
+    const hits = data.response?.hits || [];
+    if (!hits.length) return null;
+
+    const songPath = hits[0].result.path;
+    const songUrl = `https://genius.com${songPath}`;
+
+    const proxiedPage = `https://api.allorigins.win/raw?url=${encodeURIComponent(songUrl)}`;
+    const html = await fetchText(proxiedPage);
+
+    if (!html) return null;
+
+    // Extract lyrics from page
+    const match = html.match(/<div data-lyrics-container="true">([\s\S]*?)<\/div>/gi);
+    if (!match) return null;
+
+    const lyrics = match.map(block =>
+      block.replace(/<[^>]*>/g, '').trim()
+    ).join('\n');
+
+    return lyrics;
+
+  } catch {
+    return null;
+  }
+}
+
+// ============================
+// FETCH LYRICS (MULTI SOURCE)
+// ============================
+async function fetchLyrics(trackName, artist) {
+
   setStatus('Fetching lyrics...', 'multi-source');
   lyricsData = [];
+  scheduledBleeps = [];
+  firedBleeps.clear();
 
-  async function safeFetch(url, timeout = 6000) {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-    try {
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(id);
-      return res;
-    } catch {
-      clearTimeout(id);
-      return null;
-    }
-  }
-
-  // 1. LRCLIB
+  // -------- LRCLIB (SYNCED) --------
   try {
     const url = `https://lrclib.net/api/search?q=${encodeURIComponent(trackName + ' ' + artist)}`;
-    const res = await safeFetch(url);
+    const res = await fetchJSON(url);
 
-    if (res && res.ok) {
-      const results = await res.json();
-      const match = results.find(r => r.syncedLyrics) || results[0];
+    if (res && res.length) {
+      const match = res.find(r => r.syncedLyrics);
 
       if (match?.syncedLyrics) {
-        setStatus('Synced lyrics loaded!', 'lrclib ✓');
+        setStatus('Synced lyrics loaded (LRCLIB)', 'lrclib');
         lyricsData = parseLRC(match.syncedLyrics);
         renderLyrics(lyricsData);
         scheduleBleeps();
         return;
       }
-
-      if (match?.plainLyrics) {
-        const lines = match.plainLyrics.split('\n').filter(l => l.trim());
-        const timePerLine = (durationSecs * 1000) / lines.length;
-        lyricsData = lines.map((t, i) => ({ time: i * timePerLine, text: t }));
-        renderLyrics(lyricsData);
-        scheduleBleeps();
-        return;
-      }
     }
   } catch {}
 
-  // 2. lyrics.ovh
+  // -------- GENIUS FALLBACK --------
+  try {
+    const geniusLyrics = await fetchFromGenius(trackName, artist);
+
+    if (geniusLyrics) {
+      setStatus('Lyrics loaded (Genius - unsynced)', 'genius');
+      const lines = geniusLyrics.split('\n').filter(l => l.trim());
+
+      // No sync → display only
+      lyricsData = lines.map((t, i) => ({
+        time: i * 2000,
+        text: t
+      }));
+
+      renderLyrics(lyricsData);
+      return;
+    }
+  } catch {}
+
+  // -------- LYRICS.OVH --------
   try {
     const url = `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(trackName)}`;
-    const res = await safeFetch(url);
+    const data = await fetchJSON(url);
 
-    if (res && res.ok) {
-      const data = await res.json();
-      if (data.lyrics) {
-        setStatus('Fallback lyrics loaded', 'lyrics.ovh');
-        const lines = data.lyrics.split('\n').filter(l => l.trim());
-        const timePerLine = (durationSecs * 1000) / lines.length;
-        lyricsData = lines.map((t, i) => ({ time: i * timePerLine, text: t }));
-        renderLyrics(lyricsData);
-        scheduleBleeps();
-        return;
-      }
+    if (data?.lyrics) {
+      setStatus('Lyrics loaded (lyrics.ovh)', 'lyrics.ovh');
+      const lines = data.lyrics.split('\n').filter(l => l.trim());
+
+      lyricsData = lines.map((t, i) => ({
+        time: i * 2000,
+        text: t
+      }));
+
+      renderLyrics(lyricsData);
+      return;
     }
   } catch {}
 
-  // 3. local fallback
-  const hardcoded = getHardcodedLyrics(trackName, artist);
+  // -------- HARDCODED --------
+  const hardcoded = getHardcodedLyrics(trackName);
+
   if (hardcoded) {
     setStatus('Lyrics loaded (local)', '');
     lyricsData = hardcoded;
@@ -125,53 +233,93 @@ async function fetchLyrics(trackName, artist, durationSecs) {
 }
 
 // ============================
-// 🔥 WORD-LEVEL BLEEPING (NEW)
+// BLEEP SCHEDULER (SYNCED ONLY)
 // ============================
 function scheduleBleeps() {
   scheduledBleeps = [];
 
   lyricsData.forEach(line => {
     const words = line.text.split(/\s+/);
-    const badWords = getBadWords();
 
     words.forEach((word, idx) => {
-      const cleanWord = word.toLowerCase();
+      if (isBadWord(word)) {
+        const ratio = idx / Math.max(words.length, 1);
+        const offset = ratio * 700;
 
-      const isBad = badWords.some(w =>
-        new RegExp(`\\b${w}\\w*\\b`, 'i').test(cleanWord)
-      );
-
-      if (isBad) {
-        const spread = 900; // ms window per line
-        const offset = (idx / words.length) * spread;
         scheduledBleeps.push(line.time + offset);
       }
     });
   });
 }
 
+// ============================
+// BLEEP ENGINE
+// ============================
 function checkBleepTriggers(posMs) {
-  scheduledBleeps.forEach(bleepTime => {
-    const diff = bleepTime - posMs;
+  scheduledBleeps.forEach(time => {
+    const diff = time - posMs;
 
-    if (Math.abs(diff) < 150 && !firedBleeps.has(bleepTime)) {
-      firedBleeps.add(bleepTime);
+    if (Math.abs(diff) < 120 && !firedBleeps.has(time)) {
+      firedBleeps.add(time);
+
       triggerBleep();
-      setTimeout(() => firedBleeps.delete(bleepTime), 2000);
+
+      setTimeout(() => firedBleeps.delete(time), 1500);
     }
   });
+
+  // Optional highlight sync hook
+  highlightLyrics(posMs);
 }
 
+// ============================
+// AUDIO BLEEP
+// ============================
 function triggerBleep() {
   if (!player && !spotifyPlayer) return;
 
-  (spotifyPlayer || player).setVolume(0);
+  const p = spotifyPlayer || player;
+
+  p.setVolume(0);
 
   setTimeout(() => {
-    (spotifyPlayer || player).setVolume((typeof userVolume !== 'undefined' ? userVolume : 1));
-  }, 300);
+    p.setVolume(userVolume || 1);
+  }, 250);
 }
 
+// ============================
+// LYRIC HIGHLIGHTING (HOOK)
+// ============================
+function highlightLyrics(posMs) {
+  if (typeof updateHighlightedLine === 'function') {
+    const index = lyricsData.findIndex((l, i) => {
+      const next = lyricsData[i + 1];
+      return posMs >= l.time && (!next || posMs < next.time);
+    });
+
+    if (index !== -1) {
+      updateHighlightedLine(index);
+    }
+  }
+}
+
+// ============================
+// UI HELPERS (NO-OP SAFE)
+// ============================
+function setStatus(text, source) {
+  console.log(text, source);
+}
+
+function renderLyrics(data) {
+  console.log("Lyrics loaded:", data.length);
+}
+
+// ============================
+// EXPECTED TO BE CALLED BY PLAYER LOOP
+// ============================
+// checkBleepTriggers(currentPlaybackPositionMs)
+
 </script>
+
 </body>
 </html>
