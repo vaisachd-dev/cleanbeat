@@ -6,621 +6,111 @@
 <title>CleanBeat — Spotify Profanity Filter</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
-  :root {
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --surface2: #1a1a1a;
-    --border: #222;
-    --accent: #00e5a0;
-    --accent2: #ff3d5a;
-    --text: #f0f0f0;
-    --muted: #555;
-    --bleep: #ffcc00;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Animated background grid */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 0 24px;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* HEADER */
-  header {
-    padding: 48px 0 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .logo-icon {
-    width: 40px;
-    height: 40px;
-    background: var(--accent);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-  }
-
-  .logo h1 {
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-  }
-
-  .logo span { color: var(--accent); }
-
-  .badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    padding: 4px 10px;
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    border-radius: 100px;
-    letter-spacing: 0.08em;
-  }
-
-  /* SETUP PANEL */
-  .setup-panel {
-    margin: 40px 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px;
-  }
-
-  .setup-panel h2 {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 24px;
-  }
-
-  .config-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .field label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-  }
-
-  .field input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.85rem;
-    padding: 12px 16px;
-    border-radius: 8px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .field input:focus {
-    border-color: var(--accent);
-  }
-
-  .field input::placeholder { color: var(--muted); }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 28px;
-    border-radius: 10px;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    letter-spacing: 0.02em;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #000;
-  }
-
-  .btn-primary:hover {
-    background: #00ffb3;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(0,229,160,0.25);
-  }
-
-  .btn-secondary {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .btn-secondary:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* AUTH SECTION */
-  .auth-section {
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .auth-status {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--muted);
-  }
-
-  .dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-  .dot.error { background: var(--accent2); }
-
-  /* PLAYER SECTION */
-  .player-section {
-    margin: 0 0 32px;
-  }
-
-  .search-bar {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 32px;
-  }
-
-  .search-bar input {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    font-size: 1rem;
-    padding: 16px 20px;
-    border-radius: 12px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .search-bar input:focus { border-color: var(--accent); }
-  .search-bar input::placeholder { color: var(--muted); }
-
-  /* NOW PLAYING */
-  .now-playing {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    margin-bottom: 24px;
-    display: none;
-  }
-
-  .now-playing.visible { display: block; }
-
-  .track-info {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 24px;
-  }
-
-  .track-art {
-    width: 72px;
-    height: 72px;
-    border-radius: 10px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .track-art img { width: 100%; height: 100%; object-fit: cover; }
-
-  .track-meta h3 {
-    font-size: 1.2rem;
-    font-weight: 800;
-    margin-bottom: 4px;
-  }
-
-  .track-meta p {
-    color: var(--muted);
-    font-size: 0.85rem;
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* PROGRESS BAR */
-  .progress-wrap {
-    margin-bottom: 20px;
-  }
-
-  .progress-bar {
-    height: 4px;
-    background: var(--surface2);
-    border-radius: 100px;
-    overflow: hidden;
-    margin-bottom: 8px;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 100px;
-    width: 0%;
-    transition: width 0.5s linear;
-  }
-
-  .progress-times {
-    display: flex;
-    justify-content: space-between;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--muted);
-  }
-
-  /* CONTROLS */
-  .controls {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .ctrl-btn {
-    background: none;
-    border: none;
-    color: var(--text);
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 8px;
-    font-size: 1.2rem;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-  }
-
-  .ctrl-btn:hover { color: var(--accent); }
-
-  .ctrl-btn.play-btn {
-    background: var(--accent);
-    color: #000;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    justify-content: center;
-    font-size: 1rem;
-  }
-
-  .ctrl-btn.play-btn:hover {
-    background: #00ffb3;
-    box-shadow: 0 0 20px rgba(0,229,160,0.4);
-  }
-
-  .volume-wrap {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-left: auto;
-  }
-
-  .volume-wrap input[type=range] {
-    -webkit-appearance: none;
-    width: 80px;
-    height: 4px;
-    background: var(--surface2);
-    border-radius: 100px;
-    outline: none;
-  }
-
-  .volume-wrap input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    background: var(--accent);
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  /* BLEEP FLASH */
-  .bleep-flash {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--bleep);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.1s;
-    z-index: 999;
-    box-shadow: 0 0 20px var(--bleep);
-  }
-
-  .bleep-flash.active { transform: scaleX(1); }
-
-  /* LYRICS PANEL */
-  .lyrics-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    display: none;
-  }
-
-  .lyrics-panel.visible { display: block; }
-
-  .lyrics-header {
-    padding: 20px 28px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .lyrics-header h3 {
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .bleep-count {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    padding: 4px 12px;
-    background: rgba(255, 61, 90, 0.1);
-    border: 1px solid rgba(255, 61, 90, 0.3);
-    color: var(--accent2);
-    border-radius: 100px;
-  }
-
-  .lyrics-body {
-    padding: 28px;
-    max-height: 380px;
-    overflow-y: auto;
-    scroll-behavior: smooth;
-  }
-
-  .lyrics-body::-webkit-scrollbar { width: 4px; }
-  .lyrics-body::-webkit-scrollbar-track { background: transparent; }
-  .lyrics-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  .lyric-line {
-    font-size: 1rem;
-    line-height: 1.8;
-    color: var(--muted);
-    padding: 4px 0;
-    transition: all 0.3s;
-    cursor: default;
-  }
-
-  .lyric-line.active {
-    color: var(--text);
-    font-weight: 700;
-    font-size: 1.05rem;
-  }
-
-  .lyric-line.past { color: #333; }
-
-  .bleep-word {
-    display: inline-block;
-    background: rgba(255, 204, 0, 0.12);
-    border: 1px solid rgba(255, 204, 0, 0.3);
-    color: var(--bleep);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.8em;
-    padding: 1px 8px;
-    border-radius: 4px;
-    letter-spacing: 0.05em;
-    vertical-align: middle;
-  }
-
-  /* BAD WORDS SETTINGS */
-  .settings-panel {
-    margin: 24px 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .settings-toggle {
-    width: 100%;
-    background: none;
-    border: none;
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 700;
-    padding: 20px 28px;
-    text-align: left;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .settings-toggle:hover { color: var(--accent); }
-
-  .settings-body {
-    padding: 0 28px 24px;
-    display: none;
-    border-top: 1px solid var(--border);
-  }
-
-  .settings-body.open { display: block; }
-
-  .settings-body p {
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin: 16px 0 12px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .settings-body textarea {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.8rem;
-    padding: 14px;
-    border-radius: 8px;
-    outline: none;
-    resize: vertical;
-    min-height: 80px;
-    transition: border-color 0.2s;
-  }
-
-  .settings-body textarea:focus { border-color: var(--accent); }
-
-  .filter-options {
-    display: flex;
-    gap: 12px;
-    margin-top: 16px;
-    flex-wrap: wrap;
-  }
-
-  .filter-opt {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 0.85rem;
-  }
-
-  .filter-opt input[type=radio] { accent-color: var(--accent); }
-
-  /* STATUS LOG */
-  .status-log {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--muted);
-    padding: 16px 28px;
-    border-top: 1px solid var(--border);
-    min-height: 44px;
-  }
-
-  .status-log span { color: var(--accent); }
-
-  /* DEMO BANNER */
-  .demo-banner {
-    background: rgba(0,229,160,0.05);
-    border: 1px solid rgba(0,229,160,0.2);
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-bottom: 24px;
-    font-size: 0.82rem;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-
-  .demo-banner strong { color: var(--accent); }
-
-  /* WAVEFORM VISUALIZER */
-  .waveform {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    height: 32px;
-    margin-left: auto;
-  }
-
-  .wave-bar {
-    width: 3px;
-    background: var(--accent);
-    border-radius: 2px;
-    animation: wave 1s ease-in-out infinite;
-    opacity: 0.6;
-  }
-
-  .wave-bar:nth-child(1) { animation-delay: 0s; height: 8px; }
-  .wave-bar:nth-child(2) { animation-delay: 0.1s; height: 16px; }
-  .wave-bar:nth-child(3) { animation-delay: 0.2s; height: 24px; }
-  .wave-bar:nth-child(4) { animation-delay: 0.3s; height: 16px; }
-  .wave-bar:nth-child(5) { animation-delay: 0.4s; height: 8px; }
-  .wave-bar:nth-child(6) { animation-delay: 0.15s; height: 20px; }
-  .wave-bar:nth-child(7) { animation-delay: 0.25s; height: 12px; }
-
-  @keyframes wave {
-    0%, 100% { transform: scaleY(0.4); }
-    50% { transform: scaleY(1); }
-  }
-
-  .waveform.paused .wave-bar { animation-play-state: paused; }
-
-  /* RESPONSIVE */
-  @media (max-width: 600px) {
-    .config-row { grid-template-columns: 1fr; }
-    header { flex-direction: column; gap: 16px; align-items: flex-start; }
-  }
+:root{--bg:#0a0a0a;--surface:#111;--surface2:#1a1a1a;--border:#222;--accent:#00e5a0;--accent2:#ff3d5a;--text:#f0f0f0;--muted:#555;--bleep:#ffcc00;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.container{max-width:860px;margin:0 auto;padding:0 24px;position:relative;z-index:1;}
+header{padding:48px 0 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:40px;height:40px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.logo h1{font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;}
+.logo span{color:var(--accent);}
+.badge{font-family:'DM Mono',monospace;font-size:0.7rem;padding:4px 10px;border:1px solid var(--accent);color:var(--accent);border-radius:100px;}
+.panel{margin:32px 0;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;}
+.panel h2{font-size:0.85rem;font-weight:700;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:20px;}
+.infobox{background:rgba(255,204,0,0.06);border:1px solid rgba(255,204,0,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:0.78rem;line-height:1.7;font-family:'DM Mono',monospace;color:var(--muted);}
+.infobox strong{color:var(--bleep);}
+.infobox code{color:var(--accent);}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);letter-spacing:0.05em;}
+.field input,.field textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:0.82rem;padding:11px 14px;border-radius:8px;outline:none;transition:border-color 0.2s;width:100%;}
+.field input:focus,.field textarea:focus{border-color:var(--accent);}
+.field input::placeholder{color:var(--muted);}
+.field textarea{resize:vertical;min-height:72px;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 26px;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:0.88rem;cursor:pointer;border:none;transition:all 0.2s;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#00ffb3;transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,229,160,0.25);}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.auth-row{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.auth-status{font-family:'DM Mono',monospace;font-size:0.78rem;display:flex;align-items:center;gap:8px;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+.dot.ok{background:var(--accent);box-shadow:0 0 8px var(--accent);}
+.dot.err{background:var(--accent2);}
+.dot.warn{background:var(--bleep);}
+.settings-panel{margin:0 0 24px;background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.stoggle{width:100%;background:none;border:none;color:var(--text);font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:700;padding:18px 26px;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
+.stoggle:hover{color:var(--accent);}
+.sbody{padding:0 26px 22px;display:none;border-top:1px solid var(--border);}
+.sbody.open{display:block;}
+.sbody p{font-size:0.75rem;color:var(--muted);margin:14px 0 10px;font-family:'DM Mono',monospace;}
+.filter-opts{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap;}
+.filter-opt{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.84rem;}
+.filter-opt input{accent-color:var(--accent);}
+.player{margin:0 0 32px;}
+.demo-banner{background:rgba(0,229,160,0.05);border:1px solid rgba(0,229,160,0.15);border-radius:12px;padding:14px 18px;margin-bottom:22px;font-size:0.8rem;color:var(--muted);line-height:1.6;}
+.demo-banner strong{color:var(--accent);}
+.searchbar{display:flex;gap:12px;margin-bottom:28px;}
+.searchbar input{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Syne',sans-serif;font-size:0.95rem;padding:15px 18px;border-radius:12px;outline:none;transition:border-color 0.2s;}
+.searchbar input:focus{border-color:var(--accent);}
+.searchbar input::placeholder{color:var(--muted);}
+.nowplaying{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;margin-bottom:22px;display:none;}
+.nowplaying.on{display:block;}
+.tinfo{display:flex;align-items:center;gap:18px;margin-bottom:22px;}
+.tart{width:68px;height:68px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);overflow:hidden;flex-shrink:0;}
+.tart img{width:100%;height:100%;object-fit:cover;}
+.tmeta h3{font-size:1.15rem;font-weight:800;margin-bottom:4px;}
+.tmeta p{color:var(--muted);font-size:0.82rem;font-family:'DM Mono',monospace;}
+.waveform{display:flex;align-items:center;gap:3px;height:30px;margin-left:auto;}
+.wb{width:3px;background:var(--accent);border-radius:2px;animation:wave 1s ease-in-out infinite;opacity:0.6;}
+.wb:nth-child(1){animation-delay:0s;height:8px}.wb:nth-child(2){animation-delay:.1s;height:16px}.wb:nth-child(3){animation-delay:.2s;height:24px}.wb:nth-child(4){animation-delay:.3s;height:16px}.wb:nth-child(5){animation-delay:.4s;height:8px}.wb:nth-child(6){animation-delay:.15s;height:20px}.wb:nth-child(7){animation-delay:.25s;height:12px}
+@keyframes wave{0%,100%{transform:scaleY(0.4)}50%{transform:scaleY(1)}}
+.waveform.paused .wb{animation-play-state:paused;}
+.progwrap{margin-bottom:18px;}
+.progbar{height:4px;background:var(--surface2);border-radius:100px;overflow:hidden;margin-bottom:7px;}
+.progfill{height:100%;background:var(--accent);border-radius:100px;width:0%;transition:width 0.3s linear;}
+.progtimes{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);}
+.controls{display:flex;align-items:center;gap:14px;}
+.cbtn{background:none;border:none;color:var(--text);cursor:pointer;padding:8px;border-radius:8px;font-size:1.15rem;transition:all 0.15s;display:flex;align-items:center;}
+.cbtn:hover{color:var(--accent);}
+.playbtn{background:var(--accent);color:#000;width:46px;height:46px;border-radius:50%;justify-content:center;font-size:0.95rem;}
+.playbtn:hover{background:#00ffb3;box-shadow:0 0 20px rgba(0,229,160,0.4);}
+.volwrap{display:flex;align-items:center;gap:9px;margin-left:auto;}
+.volwrap input[type=range]{-webkit-appearance:none;width:78px;height:4px;background:var(--surface2);border-radius:100px;outline:none;}
+.volwrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--accent);border-radius:50%;cursor:pointer;}
+.bleep-flash{position:fixed;top:0;left:0;right:0;height:3px;background:var(--bleep);transform:scaleX(0);transform-origin:left;z-index:999;box-shadow:0 0 20px var(--bleep);transition:transform 0.08s;}
+.bleep-flash.on{transform:scaleX(1);}
+.lyrics-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:none;}
+.lyrics-panel.on{display:block;}
+.lhead{padding:18px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:gap;}
+.lhead h3{font-size:0.82rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+.lhead-right{display:flex;align-items:center;gap:10px;}
+.bleepbadge{font-family:'DM Mono',monospace;font-size:0.72rem;padding:3px 10px;background:rgba(255,61,90,0.1);border:1px solid rgba(255,61,90,0.3);color:var(--accent2);border-radius:100px;}
+.syncbadge{font-family:'DM Mono',monospace;font-size:0.72rem;padding:3px 10px;border-radius:100px;}
+.syncbadge.synced{background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.3);color:var(--accent);}
+.syncbadge.plain{background:rgba(255,204,0,0.1);border:1px solid rgba(255,204,0,0.3);color:var(--bleep);}
+.syncbadge.none{background:rgba(255,61,90,0.1);border:1px solid rgba(255,61,90,0.3);color:var(--accent2);}
+.lbody{padding:26px;max-height:360px;overflow-y:auto;scroll-behavior:smooth;}
+.lbody::-webkit-scrollbar{width:4px;}
+.lbody::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.lline{font-size:1rem;line-height:1.85;color:var(--muted);padding:3px 0;transition:all 0.3s;}
+.lline.active{color:var(--text);font-weight:700;font-size:1.04rem;}
+.lline.past{color:#2a2a2a;}
+.bword{display:inline-block;background:rgba(255,204,0,0.12);border:1px solid rgba(255,204,0,0.3);color:var(--bleep);font-family:'DM Mono',monospace;font-size:0.78em;padding:1px 7px;border-radius:4px;}
+.statusbar{font-family:'DM Mono',monospace;font-size:0.73rem;color:var(--muted);padding:14px 26px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.statusbar .sdot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.statusbar.bleeping .sdot{background:var(--bleep);box-shadow:0 0 6px var(--bleep);}
+.statusbar span{color:var(--accent);}
+.warn-msg{color:var(--bleep) !important;}
+@media(max-width:600px){.row{grid-template-columns:1fr;}header{flex-direction:column;gap:14px;align-items:flex-start;}}
 </style>
 </head>
 <body>
-
 <div class="bleep-flash" id="bleepFlash"></div>
-
 <div class="container">
+
   <header>
     <div class="logo">
       <div class="logo-icon">🎵</div>
@@ -630,32 +120,25 @@
   </header>
 
   <!-- SETUP -->
-  <div class="setup-panel" id="setupPanel">
+  <div class="panel">
     <h2>⚙ Setup</h2>
-
-    <div style="background:rgba(255,204,0,0.07);border:1px solid rgba(255,204,0,0.25);border-radius:10px;padding:14px 18px;margin-bottom:24px;font-size:0.8rem;line-height:1.7;font-family:'DM Mono',monospace;color:var(--muted);">
-      <span style="color:var(--bleep);font-weight:700;">⚠ HOW TO RUN:</span> Spotify requires this app to be served over HTTP, not opened as a file.<br>
-      Open your terminal in the folder where you saved this file and run:<br>
-      <span style="color:var(--accent);">python3 -m http.server 8888</span><br>
-      Then open <span style="color:var(--accent);">http://localhost:8888/spotify-bleeper.html</span> in your browser. The Redirect URI is already set correctly.
+    <div class="infobox">
+      <strong>⚠ REQUIRES Spotify Premium.</strong> Music plays inside this browser tab so CleanBeat can control volume.<br>
+      Hosted at: <code>https://vaisachd-dev.github.io/cleanbeat/spotify-bleeper.html</code>
     </div>
-    <div class="config-row">
+    <div class="row">
       <div class="field">
         <label>SPOTIFY CLIENT ID</label>
-        <input type="text" id="clientId" value="c01b692b91d54fdb89b5923e205d9479" />
+        <input type="text" id="clientId" value="c01b692b91d54fdb89b5923e205d9479"/>
       </div>
       <div class="field">
         <label>REDIRECT URI</label>
-        <input type="text" id="redirectUri" value="https://vaisachd-dev.github.io/cleanbeat/spotify-bleeper.html" />
+        <input type="text" id="redirectUri" value="https://vaisachd-dev.github.io/cleanbeat/spotify-bleeper.html"/>
       </div>
     </div>
-    <div class="auth-section">
-      <button class="btn btn-primary" id="connectBtn" onclick="connectSpotify()">
-        <span>▶</span> Connect Spotify
-      </button>
-      <button class="btn btn-secondary" onclick="loadDemo()">
-        ✦ Try Demo Mode
-      </button>
+    <div class="auth-row">
+      <button class="btn btn-primary" onclick="handleConnect()">▶ Connect Spotify</button>
+      <button class="btn btn-secondary" onclick="loadDemo()">✦ Demo Mode</button>
       <div class="auth-status">
         <div class="dot" id="authDot"></div>
         <span id="authText">Not connected</span>
@@ -665,831 +148,740 @@
 
   <!-- SETTINGS -->
   <div class="settings-panel">
-    <button class="settings-toggle" onclick="toggleSettings()">
-      <span>🚫 Bad Word Filter Settings</span>
-      <span id="settingsArrow">▼</span>
+    <button class="stoggle" onclick="toggleSettings()">
+      <span>🚫 Filter Settings</span>
+      <span id="sarrow">▼</span>
     </button>
-    <div class="settings-body" id="settingsBody">
-      <p>// CUSTOM BAD WORDS (comma-separated, case-insensitive)</p>
-      <textarea id="badWordsList">fuck, fucking, fucked, fucker, shit, shitting, bitch, bitches, ass, asshole, damn, cunt, dick, cock, pussy, motherfucker, nigga, nigger, bastard, whore, slut</textarea>
-      <div class="filter-options">
-        <label class="filter-opt">
-          <input type="radio" name="filterMode" value="bleep" checked /> 🔔 Bleep sound
-        </label>
-        <label class="filter-opt">
-          <input type="radio" name="filterMode" value="mute" /> 🔇 Silence
-        </label>
+    <div class="sbody" id="sbody">
+      <p>// BAD WORDS LIST (comma-separated, case-insensitive)</p>
+      <div class="field">
+        <textarea id="badWordsList">fuck, fucking, fucked, fucker, shit, shitting, bitch, bitches, ass, asshole, cunt, dick, cock, pussy, motherfucker, nigga, nigger, bastard, whore, slut, damn</textarea>
+      </div>
+      <div class="filter-opts">
+        <label class="filter-opt"><input type="radio" name="fmode" value="bleep" checked/> 🔔 Bleep sound</label>
+        <label class="filter-opt"><input type="radio" name="fmode" value="mute"/> 🔇 Silence only</label>
       </div>
     </div>
   </div>
 
   <!-- PLAYER -->
-  <div class="player-section" id="playerSection" style="display:none">
-
+  <div class="player" id="player" style="display:none">
     <div class="demo-banner" id="demoBanner" style="display:none">
-      <strong>Demo Mode</strong> — Simulating playback with a fake track and timed lyrics. 
-      Add your Spotify Client ID above and click "Connect Spotify" for real playback.
+      <strong>Demo Mode</strong> — Simulating playback with timed lyrics. Connect Spotify Premium for real music.
     </div>
 
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Search for a song on Spotify…" onkeydown="if(event.key==='Enter') searchTrack()" />
+    <div class="searchbar">
+      <input type="text" id="searchInput" placeholder="Search for a song on Spotify…" onkeydown="if(event.key==='Enter')searchTrack()"/>
       <button class="btn btn-primary" onclick="searchTrack()">Search</button>
     </div>
 
-    <!-- NOW PLAYING -->
-    <div class="now-playing" id="nowPlaying">
-      <div class="track-info">
-        <div class="track-art" id="trackArt">
-          <img id="trackImg" src="" alt="" />
-        </div>
-        <div class="track-meta">
+    <div class="nowplaying" id="nowPlaying">
+      <div class="tinfo">
+        <div class="tart"><img id="trackImg" src="" alt=""/></div>
+        <div class="tmeta">
           <h3 id="trackName">—</h3>
           <p id="trackArtist">—</p>
         </div>
         <div class="waveform paused" id="waveform">
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
+          <div class="wb"></div><div class="wb"></div><div class="wb"></div>
+          <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
         </div>
       </div>
-
-      <div class="progress-wrap">
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-        <div class="progress-times">
-          <span id="currentTime">0:00</span>
-          <span id="totalTime">0:00</span>
-        </div>
+      <div class="progwrap">
+        <div class="progbar"><div class="progfill" id="progFill"></div></div>
+        <div class="progtimes"><span id="curTime">0:00</span><span id="totTime">0:00</span></div>
       </div>
-
       <div class="controls">
-        <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
-        <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶</button>
-        <button class="ctrl-btn" onclick="nextTrack()" title="Next">⏭</button>
-        <div class="volume-wrap">
+        <button class="cbtn" onclick="prevTrack()">⏮</button>
+        <button class="cbtn playbtn" id="playBtn" onclick="togglePlay()">▶</button>
+        <button class="cbtn" onclick="nextTrack()">⏭</button>
+        <div class="volwrap">
           <span>🔊</span>
-          <input type="range" id="volumeSlider" min="0" max="100" value="100" oninput="setVolume(this.value)" />
+          <input type="range" id="volSlider" min="0" max="100" value="100" oninput="setVol(this.value)"/>
         </div>
       </div>
     </div>
 
-    <!-- LYRICS -->
     <div class="lyrics-panel" id="lyricsPanel">
-      <div class="lyrics-header">
+      <div class="lhead">
         <h3>Lyrics</h3>
-        <span class="bleep-count" id="bleepCount">0 bleeps detected</span>
-      </div>
-      <div class="lyrics-body" id="lyricsBody">
-        <div style="color:var(--muted); font-family:'DM Mono',monospace; font-size:0.8rem;">
-          Lyrics will appear here when a song is playing...
+        <div class="lhead-right">
+          <span class="bleepbadge" id="bleepBadge">0 bleeps</span>
+          <span class="syncbadge none" id="syncBadge">No lyrics</span>
         </div>
       </div>
-      <div class="status-log" id="statusLog">
-        Ready. <span>Lyrics powered by lrclib.net — free &amp; no API key needed.</span>
+      <div class="lbody" id="lbody">
+        <div style="color:var(--muted);font-family:'DM Mono',monospace;font-size:0.78rem;">Search for a song to load lyrics...</div>
+      </div>
+      <div class="statusbar" id="statusBar">
+        <div class="sdot"></div>
+        <span id="statusMsg">Ready — lyrics powered by lrclib.net</span>
       </div>
     </div>
-
   </div>
+
 </div>
 
 <script>
-// ============================
-// STATE
-// ============================
-let spotifyPlayer = null;
-let deviceId = null;
-let accessToken = null;
-let isPlaying = false;
-let isDemoMode = false;
-let currentTrackDuration = 0;
-let currentPosition = 0;
-let progressInterval = null;
-let bleepTimeouts = [];
-let scheduledBleeps = [];
-let lyricsData = [];
-let demoInterval = null;
-let userVolume = 1.0; // user's chosen volume (0–1)
+'use strict';
 
-// ============================
-// BAD WORDS
-// ============================
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+var player = null;
+var deviceId = null;
+var isPlaying = false;
+var isDemoMode = false;
+var userVolume = 1.0;
+
+var trackDuration = 0;
+var posInterval = null;
+
+// Lyrics state
+var lyricsMode = 'none'; // 'synced' | 'plain' | 'none'
+var lyricsLines = [];    // [{time:ms, text:string}]
+var bleepPoints = [];    // [{time:ms}] — only populated when lyricsMode === 'synced'
+var firedSet = new Set();
+
+// Demo
+var demoTimer = null;
+var demoPos = 0;
+var demoStart = 0;
+var DEMO_DUR = 40000;
+var DEMO_LINES = [
+  {time:0,    text:"Yo, welcome to CleanBeat demo mode"},
+  {time:3500, text:"This is how the filter works in real time"},
+  {time:7000, text:"But let me show you how this shit works"},
+  {time:10500,text:"Every bad word gets caught by the filter"},
+  {time:14000,text:"When we hit a fucking curse word right here"},
+  {time:17000,text:"The volume instantly drops to zero"},
+  {time:20000,text:"And a bleep tone plays through your speakers"},
+  {time:23500,text:"Your kids won't hear a damn thing"},
+  {time:27000,text:"Lyrics are highlighted line by line"},
+  {time:30500,text:"The yellow bar flashes on each bleep"},
+  {time:34000,text:"Connect Spotify Premium to use with real music"},
+  {time:37500,text:"Search any song and it just works"}
+];
+
+// ─────────────────────────────────────────
+// BAD WORD ENGINE (fixed per ChatGPT review)
+// ─────────────────────────────────────────
 function getBadWords() {
   return document.getElementById('badWordsList').value
-    .split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+    .split(',').map(function(w){ return w.trim().toLowerCase(); }).filter(Boolean);
 }
 
-function containsBadWord(text) {
-  const words = getBadWords();
-  const lower = text.toLowerCase();
-  return words.some(w => {
-    const re = new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    return re.test(lower);
-  });
+// Normalize a word: lowercase, strip all non-alpha chars
+function normalize(word) {
+  return word.toLowerCase().replace(/[^a-z]/g, '');
 }
 
+// Check if a full lyric line contains a bad word
+// Uses word-level normalization to handle "bitch," "fuck!" etc.
+function lineHasBadWord(text) {
+  var bad = getBadWords();
+  var words = text.split(/\s+/);
+  for (var i = 0; i < words.length; i++) {
+    var n = normalize(words[i]);
+    if (!n) continue;
+    for (var j = 0; j < bad.length; j++) {
+      // Exact match OR starts-with (catches "fucking" when list has "fuck")
+      if (n === bad[j] || n.startsWith(bad[j])) return true;
+    }
+  }
+  return false;
+}
+
+// Censor a line for display
 function censorLine(text) {
-  const words = getBadWords();
-  let result = text;
-  words.forEach(w => {
-    const re = new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-    result = result.replace(re, `<span class="bleep-word">🔔 *BLEEP*</span>`);
-  });
-  return result;
+  var bad = getBadWords();
+  return text.split(/(\s+)/).map(function(token) {
+    if (/^\s+$/.test(token)) return token;
+    var n = normalize(token);
+    var isBad = bad.some(function(w){ return n === w || n.startsWith(w); });
+    return isBad ? '<span class="bword">🔔 *BLEEP*</span>' : escHtml(token);
+  }).join('');
 }
 
-// ============================
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─────────────────────────────────────────
 // UI HELPERS
-// ============================
-function setStatus(msg, highlight) {
-  document.getElementById('statusLog').innerHTML =
-    highlight ? `${msg} <span>${highlight}</span>` : msg;
+// ─────────────────────────────────────────
+function setStatus(msg, isBleeping) {
+  var bar = document.getElementById('statusBar');
+  document.getElementById('statusMsg').textContent = msg;
+  bar.classList.toggle('bleeping', !!isBleeping);
 }
 
-function setAuthStatus(state, text) {
-  const dot = document.getElementById('authDot');
-  const authText = document.getElementById('authText');
-  dot.className = 'dot ' + state;
-  authText.textContent = text;
+function setAuth(cls, txt) {
+  document.getElementById('authDot').className = 'dot ' + cls;
+  document.getElementById('authText').textContent = txt;
 }
 
 function toggleSettings() {
-  const body = document.getElementById('settingsBody');
-  const arrow = document.getElementById('settingsArrow');
-  body.classList.toggle('open');
-  arrow.textContent = body.classList.contains('open') ? '▲' : '▼';
+  var b = document.getElementById('sbody');
+  b.classList.toggle('open');
+  document.getElementById('sarrow').textContent = b.classList.contains('open') ? '▲' : '▼';
 }
 
-function formatTime(ms) {
-  const s = Math.floor(ms / 1000);
-  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+function fmtMs(ms) {
+  var s = Math.floor(ms / 1000);
+  return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
 }
 
-function triggerBleepFlash() {
-  const f = document.getElementById('bleepFlash');
-  f.classList.add('active');
-  setTimeout(() => f.classList.remove('active'), 300);
+function flashBleep() {
+  var f = document.getElementById('bleepFlash');
+  f.classList.add('on');
+  setTimeout(function(){ f.classList.remove('on'); }, 280);
 }
 
-// ============================
-// SPOTIFY AUTH
-// ============================
-// ============================
-// PKCE HELPERS
-// ============================
-function generateRandomString(length) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  return Array.from(array).map(b => chars[b % chars.length]).join('');
-}
-
-async function generateCodeChallenge(verifier) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return btoa(String.fromCharCode(...new Uint8Array(digest)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function connectSpotify() {
-  const clientId = document.getElementById('clientId').value.trim();
-  const redirectUri = document.getElementById('redirectUri').value.trim();
-  if (!clientId) {
-    alert('Please enter your Spotify Client ID first.');
-    return;
+function setSyncBadge(mode) {
+  var el = document.getElementById('syncBadge');
+  if (mode === 'synced') {
+    el.className = 'syncbadge synced'; el.textContent = '✓ Synced lyrics';
+  } else if (mode === 'plain') {
+    el.className = 'syncbadge plain'; el.textContent = '~ Plain lyrics (display only)';
+  } else {
+    el.className = 'syncbadge none'; el.textContent = 'No lyrics';
   }
-
-  const verifier = generateRandomString(64);
-  const challenge = await generateCodeChallenge(verifier);
-
-  localStorage.setItem('cb_verifier', verifier);
-  localStorage.setItem('cb_client_id', clientId);
-  localStorage.setItem('cb_redirect_uri', redirectUri);
-
-  const scopes = [
-    'streaming',
-    'user-read-email',
-    'user-read-private',
-    'user-read-playback-state',
-    'user-modify-playback-state'
-  ].join(' ');
-
-  const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: clientId,
-    scope: scopes,
-    redirect_uri: redirectUri,
-    code_challenge_method: 'S256',
-    code_challenge: challenge,
-  });
-
-  window.location.href = `https://accounts.spotify.com/authorize?${params}`;
 }
 
-async function exchangeCodeForToken(code) {
-  const clientId = localStorage.getItem('cb_client_id');
-  const redirectUri = localStorage.getItem('cb_redirect_uri');
-  const verifier = localStorage.getItem('cb_verifier');
+// ─────────────────────────────────────────
+// PKCE AUTH
+// ─────────────────────────────────────────
+function rndStr(n) {
+  var c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var a = new Uint8Array(n); crypto.getRandomValues(a);
+  return Array.from(a).map(function(b){ return c[b%c.length]; }).join('');
+}
 
-  const res = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+async function codeChallenge(v) {
+  var d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(d)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function handleConnect() {
+  doConnect().catch(function(e){ alert('Connect error: ' + e.message); });
+}
+
+async function doConnect() {
+  var cid = document.getElementById('clientId').value.trim();
+  var ruri = document.getElementById('redirectUri').value.trim();
+  if (!cid) { alert('Enter your Spotify Client ID first.'); return; }
+  var v = rndStr(64);
+  var ch = await codeChallenge(v);
+  localStorage.setItem('cb_v', v);
+  localStorage.setItem('cb_cid', cid);
+  localStorage.setItem('cb_ruri', ruri);
+  var p = new URLSearchParams({
+    response_type:'code', client_id:cid,
+    scope:'streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state',
+    redirect_uri:ruri, code_challenge_method:'S256', code_challenge:ch
+  });
+  window.location.href = 'https://accounts.spotify.com/authorize?' + p;
+}
+
+async function exchangeCode(code) {
+  var r = await fetch('https://accounts.spotify.com/api/token', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body: new URLSearchParams({
-      client_id: clientId,
+      client_id: localStorage.getItem('cb_cid'),
       grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirectUri,
-      code_verifier: verifier,
+      code: code,
+      redirect_uri: localStorage.getItem('cb_ruri'),
+      code_verifier: localStorage.getItem('cb_v')
     })
   });
-
-  const data = await res.json();
-  if (data.access_token) {
-    localStorage.setItem('cb_access_token', data.access_token);
-    localStorage.setItem('cb_refresh_token', data.refresh_token);
-    localStorage.setItem('cb_token_expiry', Date.now() + data.expires_in * 1000);
-    return data.access_token;
-  }
-  throw new Error(data.error_description || 'Token exchange failed');
+  var d = await r.json();
+  if (!d.access_token) throw new Error(d.error_description || 'Token exchange failed');
+  saveToken(d);
+  return d.access_token;
 }
 
-async function getValidToken() {
-  const expiry = parseInt(localStorage.getItem('cb_token_expiry') || '0');
-  if (Date.now() < expiry - 60000) {
-    return localStorage.getItem('cb_access_token');
-  }
-  // Refresh
-  const clientId = localStorage.getItem('cb_client_id');
-  const refreshToken = localStorage.getItem('cb_refresh_token');
-  if (!refreshToken) return null;
-
-  const res = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+async function refreshToken() {
+  var rt = localStorage.getItem('cb_rt');
+  if (!rt) return null;
+  var r = await fetch('https://accounts.spotify.com/api/token', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body: new URLSearchParams({
-      client_id: clientId,
+      client_id: localStorage.getItem('cb_cid'),
       grant_type: 'refresh_token',
-      refresh_token: refreshToken,
+      refresh_token: rt
     })
   });
-  const data = await res.json();
-  if (data.access_token) {
-    localStorage.setItem('cb_access_token', data.access_token);
-    localStorage.setItem('cb_token_expiry', Date.now() + data.expires_in * 1000);
-    return data.access_token;
-  }
+  var d = await r.json();
+  if (d.access_token) { saveToken(d); return d.access_token; }
   return null;
 }
 
-function initSpotifySDK(token) {
-  accessToken = token;
-  window.history.replaceState({}, document.title, window.location.pathname);
+function saveToken(d) {
+  localStorage.setItem('cb_at', d.access_token);
+  if (d.refresh_token) localStorage.setItem('cb_rt', d.refresh_token);
+  localStorage.setItem('cb_exp', Date.now() + d.expires_in * 1000);
+}
 
-  const script = document.createElement('script');
-  script.src = 'https://sdk.scdn.co/spotify-player.js';
-  document.head.appendChild(script);
+async function getToken() {
+  var exp = parseInt(localStorage.getItem('cb_exp') || '0');
+  if (Date.now() < exp - 60000) return localStorage.getItem('cb_at');
+  return refreshToken();
+}
 
-  window.onSpotifyWebPlaybackSDKReady = () => {
-    spotifyPlayer = new Spotify.Player({
+// ─────────────────────────────────────────
+// SPOTIFY SDK
+// ─────────────────────────────────────────
+function initSDK() {
+  var s = document.createElement('script');
+  s.src = 'https://sdk.scdn.co/spotify-player.js';
+  document.head.appendChild(s);
+
+  window.onSpotifyWebPlaybackSDKReady = function() {
+    player = new Spotify.Player({
       name: 'CleanBeat',
-      getOAuthToken: async cb => {
-        const token = await getValidToken();
-        cb(token);
-      },
+      getOAuthToken: async function(cb) { cb(await getToken()); },
       volume: 1.0
     });
 
-    spotifyPlayer.addListener('ready', ({ device_id }) => {
-      deviceId = device_id;
-      setAuthStatus('connected', 'Connected to Spotify');
-      setStatus('Spotify ready!', 'Device: CleanBeat');
-      document.getElementById('playerSection').style.display = 'block';
+    player.addListener('ready', function(o) {
+      deviceId = o.device_id;
+      setAuth('ok', 'Connected ✓');
+      setStatus('Ready — search for a song to begin.');
+      document.getElementById('player').style.display = 'block';
+      document.getElementById('lyricsPanel').classList.add('on');
     });
 
-    spotifyPlayer.addListener('not_ready', () => {
-      setAuthStatus('error', 'Disconnected');
+    player.addListener('not_ready', function() {
+      setAuth('err', 'Player offline');
     });
 
-    spotifyPlayer.addListener('player_state_changed', state => {
+    player.addListener('player_state_changed', function(state) {
       if (!state) return;
+      var wasPlaying = isPlaying;
       isPlaying = !state.paused;
-      currentTrackDuration = state.duration;
-      currentPosition = state.position;
+      trackDuration = state.duration;
+
       updatePlayUI();
 
-      const track = state.track_window.current_track;
-      if (track) {
-        document.getElementById('trackName').textContent = track.name;
-        document.getElementById('trackArtist').textContent = track.artists.map(a=>a.name).join(', ');
-        if (track.album?.images?.[0]) {
-          document.getElementById('trackImg').src = track.album.images[0].url;
-        }
-        document.getElementById('nowPlaying').classList.add('visible');
-        document.getElementById('totalTime').textContent = formatTime(state.duration);
+      var t = state.track_window.current_track;
+      if (t) {
+        document.getElementById('trackName').textContent = t.name;
+        document.getElementById('trackArtist').textContent = t.artists.map(function(a){ return a.name; }).join(', ');
+        if (t.album && t.album.images && t.album.images[0])
+          document.getElementById('trackImg').src = t.album.images[0].url;
+        document.getElementById('nowPlaying').classList.add('on');
+        document.getElementById('totTime').textContent = fmtMs(state.duration);
       }
     });
 
-    spotifyPlayer.connect();
+    player.connect();
   };
 }
 
-// ============================
+// ─────────────────────────────────────────
 // PLAYBACK CONTROL
-// ============================
+// ─────────────────────────────────────────
 async function togglePlay() {
   if (isDemoMode) {
     isPlaying = !isPlaying;
     updatePlayUI();
-    if (isPlaying) startDemoProgress();
-    else pauseDemo();
+    if (isPlaying) startDemoTimer(); else stopDemoTimer();
     return;
   }
-  if (!spotifyPlayer) return;
-  await spotifyPlayer.togglePlay();
+  if (player) await player.togglePlay();
 }
 
 function updatePlayUI() {
   document.getElementById('playBtn').textContent = isPlaying ? '⏸' : '▶';
-  const wf = document.getElementById('waveform');
-  wf.classList.toggle('paused', !isPlaying);
-  if (isPlaying) startProgressTracking();
-  else stopProgressTracking();
+  document.getElementById('waveform').classList.toggle('paused', !isPlaying);
+  if (isPlaying) startPosTracking(); else stopPosTracking();
 }
 
-function startProgressTracking() {
-  stopProgressTracking();
-  progressInterval = setInterval(async () => {
-    if (isDemoMode) return; // handled separately
-    if (!spotifyPlayer) return;
-    const state = await spotifyPlayer.getCurrentState();
+// Poll Spotify position every 250ms for tight bleep sync
+function startPosTracking() {
+  stopPosTracking();
+  posInterval = setInterval(async function() {
+    if (isDemoMode || !player) return;
+    var state = await player.getCurrentState();
     if (!state) return;
-    currentPosition = state.position;
-    currentTrackDuration = state.duration;
-    updateProgressBar();
-    checkBleepTriggers(currentPosition);
-  }, 500);
+    var pos = state.position;
+    updateProgress(pos, state.duration);
+    if (lyricsMode === 'synced') checkBleeps(pos);
+    highlightLine(pos);
+  }, 250);
 }
 
-function stopProgressTracking() {
-  if (progressInterval) clearInterval(progressInterval);
+function stopPosTracking() {
+  if (posInterval) clearInterval(posInterval);
 }
 
-function updateProgressBar() {
-  if (!currentTrackDuration) return;
-  const pct = (currentPosition / currentTrackDuration) * 100;
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('currentTime').textContent = formatTime(currentPosition);
-  highlightActiveLyric(currentPosition);
+function updateProgress(pos, dur) {
+  if (!dur) return;
+  document.getElementById('progFill').style.width = (pos / dur * 100) + '%';
+  document.getElementById('curTime').textContent = fmtMs(pos);
 }
 
-function prevTrack() {
-  if (isDemoMode) return;
-  if (spotifyPlayer) spotifyPlayer.previousTrack();
+function prevTrack() { if (!isDemoMode && player) player.previousTrack(); }
+function nextTrack() { if (!isDemoMode && player) player.nextTrack(); }
+
+function setVol(v) {
+  userVolume = v / 100;
+  if (!isDemoMode && player) player.setVolume(userVolume);
 }
 
-function nextTrack() {
-  if (isDemoMode) return;
-  if (spotifyPlayer) spotifyPlayer.nextTrack();
-}
-
-function setVolume(val) {
-  userVolume = val / 100;
-  if (isDemoMode) return;
-  if (spotifyPlayer) spotifyPlayer.setVolume(userVolume);
-}
-
-// ============================
+// ─────────────────────────────────────────
 // SEARCH
-// ============================
+// ─────────────────────────────────────────
 async function searchTrack() {
-  const query = document.getElementById('searchInput').value.trim();
-  if (!query) return;
+  var q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  if (isDemoMode) { setStatus('Connect Spotify to search real songs.'); return; }
 
-  if (isDemoMode) {
-    setStatus('Demo mode — cannot search real Spotify.', 'Connect Spotify for search.');
-    return;
-  }
-
-  setStatus('Searching...', query);
-
+  setStatus('Searching Spotify...');
   try {
-    const token = await getValidToken();
-    if (!token) { setStatus('Not connected.', 'Please connect Spotify first.'); return; }
+    var tok = await getToken();
+    if (!tok) { setStatus('Not connected — click Connect Spotify first.'); return; }
 
-    const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`, {
-      headers: { Authorization: `Bearer ${token}` }
+    var r = await fetch('https://api.spotify.com/v1/search?q=' + encodeURIComponent(q) + '&type=track&limit=1', {
+      headers: { Authorization: 'Bearer ' + tok }
     });
-    const data = await res.json();
-    const track = data.tracks?.items?.[0];
-    if (!track) { setStatus('No results found.', ''); return; }
+    var d = await r.json();
+    var track = d.tracks && d.tracks.items && d.tracks.items[0];
+    if (!track) { setStatus('No results found for: ' + q); return; }
 
-    // Play it
-    await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+    // Start playback on this device
+    await fetch('https://api.spotify.com/v1/me/player/play?device_id=' + deviceId, {
       method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
       body: JSON.stringify({ uris: [track.uri] })
     });
 
-    setStatus('Playing:', track.name);
-    document.getElementById('lyricsPanel').classList.add('visible');
-
-    // Fetch lyrics from LRCLIB (free, no key needed, real timestamps)
-    await fetchLyrics(track.name, track.artists[0].name, Math.floor(track.duration_ms / 1000));
+    setStatus('Loading lyrics for: ' + track.name);
+    firedSet.clear();
+    await loadLyrics(track.name, track.artists[0].name, Math.floor(track.duration_ms / 1000));
 
   } catch(e) {
-    setStatus('Error:', e.message);
+    setStatus('Error: ' + e.message);
   }
 }
 
-// ============================
-// LYRICS — powered by LRCLIB
-// ============================
-async function fetchLyrics(trackName, artist, durationSecs) {
-  setStatus('Fetching synced lyrics...', 'lrclib.net');
-  lyricsData = [];
-
-  // Helper: fetch with timeout
-  async function fetchWithTimeout(url, ms = 6000) {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), ms);
-    try {
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(id);
-      return res;
-    } catch(e) {
-      clearTimeout(id);
-      throw e;
-    }
-  }
-
-  // 1. Try exact match with duration
+// ─────────────────────────────────────────
+// LYRICS ENGINE
+// ─────────────────────────────────────────
+async function timedFetch(url, ms) {
+  ms = ms || 7000;
+  var ctrl = new AbortController();
+  var t = setTimeout(function(){ ctrl.abort(); }, ms);
   try {
-    const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(trackName)}&duration=${durationSecs}`;
-    const res = await fetchWithTimeout(url);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.syncedLyrics) {
-        setStatus('Synced lyrics loaded!', '✓ Millisecond-accurate timestamps');
-        lyricsData = parseLRC(data.syncedLyrics);
-        renderLyrics(lyricsData);
-        scheduleBleeps();
-        return;
-      }
-      if (data.plainLyrics) {
-        setStatus('Plain lyrics loaded.', '~ Estimated timestamps');
-        const lines = data.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        const timePerLine = (durationSecs * 1000) / lines.length;
-        lyricsData = lines.map((text, i) => ({ time: Math.floor(i * timePerLine), text }));
-        renderLyrics(lyricsData);
-        scheduleBleeps();
-        return;
-      }
-    }
-  } catch(e) {
-    setStatus('Trying search fallback...', '');
-  }
+    var r = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(t); return r;
+  } catch(e) { clearTimeout(t); throw e; }
+}
 
-  // 2. Try search (looser match, no duration required)
+async function loadLyrics(trackName, artist, durSecs) {
+  lyricsMode = 'none';
+  lyricsLines = [];
+  bleepPoints = [];
+  firedSet.clear();
+  setSyncBadge('none');
+  setStatus('Fetching lyrics from lrclib.net...');
+  renderLyrics();
+
+  // ── 1. LRCLIB exact match ──
   try {
-    const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(trackName + ' ' + artist)}`;
-    const res = await fetchWithTimeout(searchUrl);
-    if (res.ok) {
-      const results = await res.json();
-      const match = results.find(r => r.syncedLyrics) || results.find(r => r.plainLyrics);
-      if (match?.syncedLyrics) {
-        setStatus('Synced lyrics found!', '✓ Timestamps ready');
-        lyricsData = parseLRC(match.syncedLyrics);
-        renderLyrics(lyricsData);
-        scheduleBleeps();
-        return;
+    var r = await timedFetch(
+      'https://lrclib.net/api/get?artist_name=' + encodeURIComponent(artist) +
+      '&track_name=' + encodeURIComponent(trackName) +
+      '&duration=' + durSecs
+    );
+    if (r.ok) {
+      var d = await r.json();
+      if (d.syncedLyrics) {
+        return applyLyrics('synced', parseLRC(d.syncedLyrics), trackName, artist);
       }
-      if (match?.plainLyrics) {
-        setStatus('Plain lyrics found.', '~ Estimated timestamps');
-        const lines = match.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        const timePerLine = (durationSecs * 1000) / lines.length;
-        lyricsData = lines.map((text, i) => ({ time: Math.floor(i * timePerLine), text }));
-        renderLyrics(lyricsData);
-        scheduleBleeps();
-        return;
+      if (d.plainLyrics) {
+        return applyLyrics('plain', makeLines(d.plainLyrics, durSecs), trackName, artist);
       }
     }
   } catch(e) {}
 
-  // 3. Hardcoded fallback for known songs not yet in lrclib
-  const hardcoded = getHardcodedLyrics(trackName, artist);
-  if (hardcoded) {
-    setStatus('Lyrics loaded from local library.', '~ Estimated timestamps');
-    lyricsData = hardcoded;
-    renderLyrics(lyricsData);
-    scheduleBleeps();
-    return;
+  // ── 2. LRCLIB search fallback ──
+  try {
+    var r2 = await timedFetch(
+      'https://lrclib.net/api/search?q=' + encodeURIComponent(trackName + ' ' + artist)
+    );
+    if (r2.ok) {
+      var results = await r2.json();
+      var synced = results.find(function(x){ return x.syncedLyrics; });
+      var plain  = results.find(function(x){ return x.plainLyrics; });
+      if (synced) return applyLyrics('synced', parseLRC(synced.syncedLyrics), trackName, artist);
+      if (plain)  return applyLyrics('plain', makeLines(plain.plainLyrics, durSecs), trackName, artist);
+    }
+  } catch(e) {}
+
+  // ── 3. Hardcoded library for recent songs ──
+  var hc = hardcodedLyrics(trackName);
+  if (hc) {
+    // Hardcoded lyrics have real timestamps so treat as synced
+    return applyLyrics('synced', hc, trackName, artist);
   }
 
-  // 4. Give up gracefully
-  setStatus('Lyrics not found.', 'Bad words in this song cannot be filtered.');
-  renderLyrics([
-    { time: 0, text: `♪ ${trackName} — ${artist}` },
-    { time: 2000, text: '(Synced lyrics unavailable for this track)' }
-  ]);
+  // ── 4. No lyrics found ──
+  lyricsMode = 'none';
+  setSyncBadge('none');
+  renderLyrics();
+  setStatus('No lyrics found — cannot filter this song. Try another.');
 }
 
-// ============================
-// HARDCODED LYRICS LIBRARY
-// For new songs not yet in lrclib
-// ============================
-function getHardcodedLyrics(trackName, artist) {
-  const key = trackName.toLowerCase().replace(/[^a-z0-9]/g, '');
+function applyLyrics(mode, lines, trackName, artist) {
+  lyricsMode = mode;
+  lyricsLines = lines;
 
-  const library = {
+  if (mode === 'synced') {
+    // Build bleep schedule — only from synced timestamps
+    bleepPoints = lines
+      .filter(function(l){ return lineHasBadWord(l.text); })
+      .map(function(l){ return l.time; });
+    setSyncBadge('synced');
+    setStatus('Synced lyrics loaded — filter armed with ' + bleepPoints.length + ' bleep point(s).');
+  } else {
+    // Plain: show lyrics for display only, no bleeping
+    bleepPoints = [];
+    setSyncBadge('plain');
+    setStatus('Plain lyrics loaded (display only) — timing not accurate enough to bleep safely.');
+  }
+
+  renderLyrics();
+}
+
+// Parse LRC timestamps: [mm:ss.xx] or [mm:ss.xxx]
+function parseLRC(lrc) {
+  var re = /^\[(\d{2}):(\d{2})\.(\d{2,3})\]\s*(.*)/;
+  return lrc.split('\n').map(function(line) {
+    var m = line.match(re);
+    if (!m || !m[4].trim()) return null;
+    var ms = parseInt(m[1])*60000 + parseInt(m[2])*1000 +
+             (m[3].length === 2 ? parseInt(m[3])*10 : parseInt(m[3]));
+    return { time: ms, text: m[4].trim() };
+  }).filter(Boolean).sort(function(a,b){ return a.time - b.time; });
+}
+
+// For plain lyrics: evenly distribute timestamps (display only, not for bleeping)
+function makeLines(plain, durSecs) {
+  var lines = plain.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  var tpl = (durSecs * 1000) / lines.length;
+  return lines.map(function(text, i){ return { time: Math.floor(i * tpl), text: text }; });
+}
+
+// Hardcoded lyrics for songs not yet indexed by lrclib
+function hardcodedLyrics(trackName) {
+  var key = trackName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  var lib = {
     'aariaari': [
-      { time: 0,     text: "Ghir-ghir badal barsange" },
-      { time: 4000,  text: "Jad teer milan do raahvan de" },
-      { time: 7000,  text: "You better watch your head" },
-      { time: 10000, text: "Ghir-ghir badal barsange" },
-      { time: 13000, text: "Hun badle rukh havaavan de" },
-      { time: 16000, text: "You better watch your head" },
-      { time: 19000, text: "Aayi ankhan te aayi meri sardari" },
-      { time: 23000, text: "Aari-aari-aari" },
-      { time: 26000, text: "Aari-aari-aari, ve teri-meri ik jindri" },
-      { time: 30000, text: "Laigi lut jind saari ve teri-meri" },
-      { time: 34000, text: "Aari-aari-aari" },
-      { time: 37000, text: "O mainu dil di baazi agge" },
-      { time: 40000, text: "Koi dard bada na, koi dard bada na lagge" },
-      { time: 44000, text: "Saari duniyadaari thagge" },
-      { time: 47000, text: "Meri jaan tere ton vaari" },
-      { time: 50000, text: "Aari-aari-aari" },
-      { time: 53000, text: "Aari-aari-aari, ve teri-meri ik jindri" },
-      { time: 57000, text: "Laigi lut jind saari ve teri-meri" },
-      { time: 61000, text: "Aari-aari-aari" },
-      { time: 65000, text: "Yo, my father raised me a winner" },
-      { time: 68000, text: "If I kill for my people, it don't make me a sinner" },
-      { time: 72000, text: "From the coast to the plains, everybody knows the name" },
-      { time: 76000, text: "I'm coming for 'em, we got bills to maintain" },
-      { time: 80000, text: "Bitch, you got an ego, shouldn't fuck with me tho" },
-      { time: 84000, text: "I make all this money like I'm running a casino" },
-      { time: 88000, text: "G code, got that power in my genome" },
-      { time: 92000, text: "Cut the bluff, can you stand up? What's between those?" },
-      { time: 96000, text: "Aari-aari-aari" },
-      { time: 99000, text: "Aari-aari-aari, ve teri-meri ik jindri" },
-      { time: 103000, text: "Laigi lut jind saari ve teri-meri" },
-      { time: 107000, text: "Aari-aari-aari" },
-      { time: 111000, text: "O mainu dil di baazi agge" },
-      { time: 114000, text: "Koi dard bada na, koi dard bada na lagge" },
-      { time: 118000, text: "Saari duniyadaari thagge" },
-      { time: 121000, text: "Meri jaan tere ton vaari" },
-      { time: 124000, text: "Aari-aari-aari" },
-      { time: 127000, text: "Aari-aari-aari, ve teri-meri ik jindri" },
-      { time: 131000, text: "Laigi lut jind saari ve teri-meri" },
-      { time: 135000, text: "Aari-aari-aari" },
+      {time:2000,  text:"Ghir-ghir badal barsange"},
+      {time:5500,  text:"Jad teer milan do raahvan de"},
+      {time:9000,  text:"You better watch your head"},
+      {time:12500, text:"Ghir-ghir badal barsange"},
+      {time:16000, text:"Hun badle rukh havaavan de"},
+      {time:19500, text:"You better watch your head"},
+      {time:23000, text:"Aayi ankhan te aayi meri sardari"},
+      {time:27500, text:"Aari-aari-aari"},
+      {time:31000, text:"Aari-aari-aari, ve teri-meri ik jindri"},
+      {time:35000, text:"Laigi lut jind saari ve teri-meri"},
+      {time:39000, text:"Aari-aari-aari"},
+      {time:43000, text:"O mainu dil di baazi agge"},
+      {time:46500, text:"Koi dard bada na lagge"},
+      {time:50000, text:"Saari duniyadaari thagge"},
+      {time:53500, text:"Meri jaan tere ton vaari"},
+      {time:57000, text:"Aari-aari-aari"},
+      {time:60500, text:"Aari-aari-aari, ve teri-meri ik jindri"},
+      {time:64500, text:"Laigi lut jind saari ve teri-meri"},
+      {time:68500, text:"Aari-aari-aari"},
+      {time:73000, text:"Yo, my father raised me a winner"},
+      {time:76500, text:"If I kill for my people it don't make me a sinner"},
+      {time:80000, text:"From the coast to the plains everybody knows the name"},
+      {time:83500, text:"I'm coming for 'em we got bills to maintain"},
+      {time:87000, text:"Bitch you got an ego shouldn't fuck with me tho"},
+      {time:90500, text:"I make all this money like I'm running a casino"},
+      {time:94000, text:"G code got that power in my genome"},
+      {time:97500, text:"Cut the bluff can you stand up what's between those"},
+      {time:101000,text:"Aari-aari-aari"},
+      {time:104500,text:"Aari-aari-aari, ve teri-meri ik jindri"},
+      {time:108500,text:"Laigi lut jind saari ve teri-meri"},
+      {time:112500,text:"Aari-aari-aari"},
+      {time:116500,text:"O mainu dil di baazi agge"},
+      {time:120000,text:"Koi dard bada na lagge"},
+      {time:123500,text:"Saari duniyadaari thagge"},
+      {time:127000,text:"Meri jaan tere ton vaari"},
+      {time:130500,text:"Aari-aari-aari"},
+      {time:134000,text:"Aari-aari-aari, ve teri-meri ik jindri"},
+      {time:138000,text:"Laigi lut jind saari ve teri-meri"},
+      {time:142000,text:"Aari-aari-aari"}
     ]
   };
-
-  return library[key] || null;
-}
-
-// Parse LRC format: [mm:ss.xx] lyric line
-function parseLRC(lrcText) {
-  const lines = lrcText.split('\n');
-  const parsed = [];
-  const regex = /^\[(\d{2}):(\d{2})\.(\d{2,3})\]\s*(.*)/;
-
-  lines.forEach(line => {
-    const match = line.match(regex);
-    if (match) {
-      const mins = parseInt(match[1]);
-      const secs = parseInt(match[2]);
-      const ms = match[3].length === 2 ? parseInt(match[3]) * 10 : parseInt(match[3]);
-      const timeMs = (mins * 60 * 1000) + (secs * 1000) + ms;
-      const text = match[4].trim();
-      if (text) parsed.push({ time: timeMs, text });
-    }
-  });
-
-  return parsed.sort((a, b) => a.time - b.time);
-}
-
-function renderLyrics(lines) {
-  const body = document.getElementById('lyricsBody');
-  let bleepCount = 0;
-  body.innerHTML = lines.map((line, i) => {
-    const hasBad = containsBadWord(line.text);
-    if (hasBad) bleepCount++;
-    return `<div class="lyric-line" id="lyric-${i}" data-time="${line.time}">${censorLine(line.text)}</div>`;
-  }).join('');
-  document.getElementById('bleepCount').textContent = `${bleepCount} bleep${bleepCount !== 1 ? 's' : ''} detected`;
-}
-
-function highlightActiveLyric(posMs) {
-  if (!lyricsData.length) return;
-  let activeIdx = 0;
-  for (let i = 0; i < lyricsData.length; i++) {
-    if (lyricsData[i].time <= posMs) activeIdx = i;
+  var keys = Object.keys(lib);
+  for (var i = 0; i < keys.length; i++) {
+    if (key.includes(keys[i])) return lib[keys[i]];
   }
-  document.querySelectorAll('.lyric-line').forEach((el, i) => {
-    el.classList.remove('active', 'past');
-    if (i === activeIdx) {
+  return null;
+}
+
+// ─────────────────────────────────────────
+// LYRICS RENDERING
+// ─────────────────────────────────────────
+function renderLyrics() {
+  var body = document.getElementById('lbody');
+  if (!lyricsLines.length) {
+    body.innerHTML = '<div style="color:var(--muted);font-family:\'DM Mono\',monospace;font-size:0.78rem;">' +
+      (lyricsMode === 'none' ? 'No lyrics available.' : 'Loading...') + '</div>';
+    document.getElementById('bleepBadge').textContent = '0 bleeps';
+    return;
+  }
+  var count = bleepPoints.length;
+  document.getElementById('bleepBadge').textContent = count + ' bleep' + (count!==1?'s':'');
+
+  body.innerHTML = lyricsLines.map(function(line, i) {
+    var isBad = lyricsMode === 'synced' && lineHasBadWord(line.text);
+    return '<div class="lline" id="ll'+i+'">' +
+      (isBad ? censorLine(line.text) : escHtml(line.text)) +
+      '</div>';
+  }).join('');
+}
+
+function highlightLine(posMs) {
+  if (!lyricsLines.length) return;
+  var active = 0;
+  for (var i = 0; i < lyricsLines.length; i++) {
+    if (lyricsLines[i].time <= posMs) active = i;
+  }
+  var els = document.querySelectorAll('.lline');
+  els.forEach(function(el, i) {
+    el.classList.remove('active','past');
+    if (i === active) {
       el.classList.add('active');
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else if (i < activeIdx) {
+      el.scrollIntoView({ behavior:'smooth', block:'center' });
+    } else if (i < active) {
       el.classList.add('past');
     }
   });
 }
 
-// ============================
+// ─────────────────────────────────────────
 // BLEEP ENGINE
-// ============================
-function scheduleBleeps() {
-  clearScheduledBleeps();
-  scheduledBleeps = lyricsData
-    .filter(line => containsBadWord(line.text))
-    .map(line => line.time);
-  setStatus(`Filter armed.`, `${scheduledBleeps.length} bleep points scheduled`);
-}
-
-function clearScheduledBleeps() {
-  bleepTimeouts.forEach(t => clearTimeout(t));
-  bleepTimeouts = [];
-  scheduledBleeps = [];
-}
-
-// Track which bleeps have already fired to avoid double-triggering
-const firedBleeps = new Set();
-
-function checkBleepTriggers(posMs) {
-  scheduledBleeps.forEach(bleepTime => {
-    const diff = bleepTime - posMs;
-    // Fire if we're within 300ms of bleep and haven't fired it yet
-    if (diff >= 0 && diff < 300 && !firedBleeps.has(bleepTime)) {
-      firedBleeps.add(bleepTime);
-      triggerBleep(diff);
-      // Allow re-firing if user seeks back
-      setTimeout(() => firedBleeps.delete(bleepTime), 5000);
+// Only runs when lyricsMode === 'synced'
+// ─────────────────────────────────────────
+function checkBleeps(posMs) {
+  for (var i = 0; i < bleepPoints.length; i++) {
+    var t = bleepPoints[i];
+    var diff = t - posMs;
+    // Fire within 300ms window, never twice for same point
+    if (diff >= 0 && diff < 300 && !firedSet.has(t)) {
+      firedSet.add(t);
+      (function(delay) {
+        setTimeout(function() { doBleep(); }, delay);
+      })(diff);
+      // Allow re-fire if user seeks (5s cooldown)
+      (function(bt) {
+        setTimeout(function() { firedSet.delete(bt); }, 5000);
+      })(t);
     }
-  });
-}
-
-function triggerBleep(delayMs = 0) {
-  setTimeout(() => {
-    if (!isPlaying) return;
-    doBleep();
-  }, delayMs);
+  }
 }
 
 function doBleep() {
-  triggerBleepFlash();
-  setStatus('🔔 BLEEP!', '');
-
-  const mode = document.querySelector('input[name=filterMode]:checked').value;
-
-  if (isDemoMode) {
-    // In demo, just show the visual effect
-    return;
-  }
-
-  if (!spotifyPlayer) return;
-  spotifyPlayer.setVolume(0);
-  playBleepSound(mode);
-  setTimeout(() => {
-    spotifyPlayer.setVolume(userVolume);
-    setStatus('Monitoring...', '');
-  }, 700);
+  if (!isPlaying) return;
+  flashBleep();
+  setStatus('🔔 BLEEP — bad word muted!', true);
+  if (isDemoMode) { setTimeout(function(){ setStatus('Monitoring...'); }, 800); return; }
+  if (!player) return;
+  var mode = document.querySelector('input[name=fmode]:checked').value;
+  player.setVolume(0);
+  if (mode === 'bleep') playBleepTone();
+  setTimeout(function() {
+    player.setVolume(userVolume);
+    setStatus('Monitoring...');
+  }, 720);
 }
 
-function playBleepSound(mode) {
-  if (mode !== 'bleep') return;
+function playBleepTone() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
     osc.type = 'sine';
     osc.frequency.setValueAtTime(1000, ctx.currentTime);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
     osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.65);
+    osc.stop(ctx.currentTime + 0.7);
   } catch(e) {}
 }
 
-// ============================
+// ─────────────────────────────────────────
 // DEMO MODE
-// ============================
-const DEMO_LYRICS = [
-  { time: 0,     text: "Yo, this is CleanBeat demo mode" },
-  { time: 3000,  text: "Real Spotify integration needs your Client ID" },
-  { time: 6500,  text: "But let me show you how this shit works" },
-  { time: 9500,  text: "Every bad word gets caught by the filter" },
-  { time: 12500, text: "When we hit a fucking curse word..." },
-  { time: 15000, text: "The volume drops and a bleep fires" },
-  { time: 18000, text: "Your kids won't hear a single damn thing" },
-  { time: 21000, text: "The lyrics are highlighted in real time" },
-  { time: 24500, text: "And the bleep indicator flashes up top" },
-  { time: 27500, text: "Connect Spotify Premium to use for real" },
-  { time: 30500, text: "Add your Client ID in the setup panel" },
-  { time: 33500, text: "Then search any song and it just works" },
-];
-
-const DEMO_DURATION = 37000;
-let demoPosition = 0;
-let demoStartTime = 0;
-
+// ─────────────────────────────────────────
 function loadDemo() {
   isDemoMode = true;
-  document.getElementById('playerSection').style.display = 'block';
+  document.getElementById('player').style.display = 'block';
   document.getElementById('demoBanner').style.display = 'block';
-  document.getElementById('nowPlaying').classList.add('visible');
-  document.getElementById('lyricsPanel').classList.add('visible');
-  document.getElementById('trackName').textContent = 'CleanBeat Demo Track';
+  document.getElementById('nowPlaying').classList.add('on');
+  document.getElementById('lyricsPanel').classList.add('on');
+  document.getElementById('trackName').textContent = 'CleanBeat Demo';
   document.getElementById('trackArtist').textContent = 'Demo Artist';
-  document.getElementById('totalTime').textContent = formatTime(DEMO_DURATION);
-  setAuthStatus('connected', 'Demo Mode');
-
-  lyricsData = DEMO_LYRICS;
-  currentTrackDuration = DEMO_DURATION;
-  renderLyrics(DEMO_LYRICS);
-  scheduledBleeps = DEMO_LYRICS.filter(l => containsBadWord(l.text)).map(l => l.time);
-  setStatus('Demo loaded.', 'Press play to start');
+  document.getElementById('totTime').textContent = fmtMs(DEMO_DUR);
+  setAuth('ok', 'Demo Mode');
+  applyLyrics('synced', DEMO_LINES, 'Demo', 'Demo');
+  setStatus('Demo ready — press ▶ to play');
 }
 
-function startDemoProgress() {
-  if (demoInterval) clearInterval(demoInterval);
-  demoStartTime = Date.now() - demoPosition;
-
-  demoInterval = setInterval(() => {
-    demoPosition = Date.now() - demoStartTime;
-    currentPosition = demoPosition;
-
-    if (demoPosition >= DEMO_DURATION) {
-      demoPosition = 0;
-      demoStartTime = Date.now();
-    }
-
-    updateProgressBar();
-
-    // Check bleeps
-    scheduledBleeps.forEach(t => {
-      const diff = t - demoPosition;
-      if (diff > 0 && diff < 250) {
-        triggerBleepFlash();
-        playBleepSound('bleep');
-        setStatus('🔔 BLEEP!', 'Bad word filtered');
-        setTimeout(() => setStatus('Monitoring...',''), 800);
-      }
-    });
+function startDemoTimer() {
+  stopDemoTimer();
+  demoStart = Date.now() - demoPos;
+  demoTimer = setInterval(function() {
+    demoPos = Date.now() - demoStart;
+    if (demoPos >= DEMO_DUR) { demoPos = 0; demoStart = Date.now(); firedSet.clear(); }
+    updateProgress(demoPos, DEMO_DUR);
+    highlightLine(demoPos);
+    checkBleeps(demoPos);
   }, 200);
 }
 
-function pauseDemo() {
-  if (demoInterval) clearInterval(demoInterval);
+function stopDemoTimer() {
+  if (demoTimer) clearInterval(demoTimer);
 }
 
-// ============================
-// INIT
-// ============================
-window.addEventListener('load', async () => {
-  // Check if we're returning from Spotify auth with a code
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
-  const error = urlParams.get('error');
+// ─────────────────────────────────────────
+// INIT — handle Spotify redirect
+// ─────────────────────────────────────────
+window.addEventListener('load', async function() {
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('code');
+  var err  = params.get('error');
 
-  if (error) {
-    setAuthStatus('error', 'Auth cancelled');
-    return;
-  }
+  if (err) { setAuth('err', 'Auth cancelled'); return; }
 
   if (code) {
-    // Clean URL
-    window.history.replaceState({}, document.title, window.location.pathname);
-    setAuthStatus('', 'Exchanging token…');
+    window.history.replaceState({}, '', window.location.pathname);
+    setAuth('', 'Connecting to Spotify…');
     try {
-      const token = await exchangeCodeForToken(code);
-      initSpotifySDK(token);
-      document.getElementById('playerSection').style.display = 'block';
-      setAuthStatus('connected', 'Authenticating…');
-      document.getElementById('lyricsPanel').classList.add('visible');
+      await exchangeCode(code);
+      initSDK();
     } catch(e) {
-      setAuthStatus('error', 'Auth failed: ' + e.message);
+      setAuth('err', 'Auth failed: ' + e.message);
     }
     return;
   }
 
-  // Check if we already have a valid token from a previous session
-  const existingToken = await getValidToken();
-  if (existingToken) {
-    initSpotifySDK(existingToken);
-    document.getElementById('playerSection').style.display = 'block';
-    setAuthStatus('connected', 'Reconnecting…');
-    document.getElementById('lyricsPanel').classList.add('visible');
+  // Try to reconnect from saved token
+  var t = await getToken();
+  if (t) {
+    setAuth('ok', 'Reconnecting…');
+    initSDK();
   }
 });
 </script>
