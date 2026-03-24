@@ -786,19 +786,19 @@ function highlightLine(posMs) {
 // BLEEP ENGINE
 // Only runs when lyricsMode === 'synced'
 // ─────────────────────────────────────────
-// Improved timing: polls every 100ms, fires with slight delay for better sync
+// Improved timing: polls every 100ms, fires early with precise window
 function checkBleeps(posMs) {
   for (var i = 0; i < bleepPoints.length; i++) {
     var t = bleepPoints[i];
     var diff = t - posMs;
 
-    // Fire within 200ms window with 80ms delay
-    // This works better for line-start words while still catching mid-line words
-    if (diff >= -100 && diff < 200 && !firedSet.has(t)) {
+    // Tighter window: -200ms to +100ms
+    // Fire 150ms EARLY to compensate for execution delay
+    if (diff >= -200 && diff < 100 && !firedSet.has(t)) {
       firedSet.add(t);
       (function(delay) {
-        // Add 80ms delay instead of firing early
-        setTimeout(function() { doBleep(); }, Math.max(0, delay + 80));
+        // Fire 150ms early (more aggressive than before)
+        setTimeout(function() { doBleep(); }, Math.max(0, delay - 150));
       })(diff);
 
       // Allow re-fire if user seeks (5s cooldown)
