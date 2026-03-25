@@ -900,42 +900,52 @@ function checkBleeps(posMs) {
   }
 }
 
-function doBleep() {
+async function doBleep() {
   if (!isPlaying) return;
-
-  const now = Date.now();
-
-  // Prevent overlap but allow faster triggers
-  if (window.__lastBleepTime && now - window.__lastBleepTime < 250) {
-    return;
-  }
-  window.__lastBleepTime = now;
 
   flashBleep();
   setStatus('🔔 BLEEP — bad word muted!', true);
 
   if (isDemoMode) {
-    setTimeout(() => setStatus('Monitoring...'), 700);
+    setTimeout(function () {
+      setStatus('Monitoring...');
+    }, 800);
     return;
   }
 
   if (!player) return;
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const p = player;
   const targetVolume = userVolume || 1;
 
   // ============================
-  // MOBILE (pause-based)
+  // MOBILE: SEEK-BASED BLEEP (NO PAUSE/RESUME)
   // ============================
   if (isMobile) {
     try {
-      p.pause();
+      const state = await player.getCurrentState();
+      if (!state) return;
 
+      const position = state.position;
+
+      // Slight forward skip prevents replay of same word
+      const SEEK_FORWARD_MS = 120;
+
+      // Try quick mute (may or may not be honored)
+      try {
+        player.setVolume(0);
+      } catch {}
+
+      // Seek forward to avoid re-playing same segment
+      await player.seek(position + SEEK_FORWARD_MS);
+
+      // Restore volume shortly after
       setTimeout(() => {
-        p.resume();
+        try {
+          player.setVolume(targetVolume);
+        } catch {}
         setStatus('Monitoring...');
-      }, 320); // longer = better coverage
+      }, 200);
 
     } catch (e) {
       console.warn('Mobile bleep failed:', e);
@@ -945,47 +955,58 @@ function doBleep() {
   }
 
   // ============================
-  // DESKTOP (FAST CUT + HOLD + SMOOTH RETURN)
+  // DESKTOP: SMOOTH FADE MUTE
   // ============================
 
-  const CUT_TIME = 50;       // fast drop (almost instant)
-  const HOLD_TIME = 380;     // covers full word
-  const FADE_IN_TIME = 180;  // smooth recovery
-
   try {
-    // FAST CUT (almost immediate mute)
-    p.setVolume(0);
+    const fadeSteps = 5;
+    const fadeOutDuration = 120;
+    const fadeInDuration = 180;
 
-    // HOLD mute long enough for full word
-    setTimeout(() => {
+    const stepOutTime = fadeOutDuration / fadeSteps;
+    const stepInTime = fadeInDuration / fadeSteps;
 
-      // Smooth fade back in
-      const steps = 6;
-      let step = 0;
-      const stepTime = FADE_IN_TIME / steps;
+    // FAST FADE OUT
+    let step = 0;
+    const fadeOut = setInterval(() => {
+      step++;
+      const vol = targetVolume * (1 - step / fadeSteps);
+      player.setVolume(Math.max(0, vol));
 
-      const fadeIn = setInterval(() => {
-        step++;
-        const vol = targetVolume * (step / steps);
-        p.setVolume(Math.min(targetVolume, vol));
+      if (step >= fadeSteps) {
+        clearInterval(fadeOut);
 
-        if (step >= steps) {
-          clearInterval(fadeIn);
-          setStatus('Monitoring...');
-        }
+        // HOLD MUTED BRIEFLY
+        setTimeout(() => {
 
-      }, stepTime);
+          // FADE IN
+          let inStep = 0;
+          const fadeIn = setInterval(() => {
+            inStep++;
+            const vol = targetVolume * (inStep / fadeSteps);
+            player.setVolume(Math.min(targetVolume, vol));
 
-    }, HOLD_TIME);
+            if (inStep >= fadeSteps) {
+              clearInterval(fadeIn);
+              setStatus('Monitoring...');
+            }
+
+          }, stepInTime);
+
+        }, 120);
+
+      }
+
+    }, stepOutTime);
 
   } catch (e) {
     console.warn('Desktop bleep failed:', e);
 
     // fallback
     try {
-      p.pause();
+      player.setVolume(0);
       setTimeout(() => {
-        p.resume();
+        player.setVolume(targetVolume);
         setStatus('Monitoring...');
       }, 300);
     } catch {}
