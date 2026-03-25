@@ -865,19 +865,89 @@ function checkBleeps(posMs) {
 
 function doBleep() {
   if (!isPlaying) return;
+
+  const now = Date.now();
+
+  // Prevent overlapping bleeps (important for rapid lyrics)
+  if (window.__lastBleepTime && now - window.__lastBleepTime < 400) {
+    return;
+  }
+  window.__lastBleepTime = now;
+
   flashBleep();
   setStatus('🔔 BLEEP — bad word muted!', true);
-  if (isDemoMode) { setTimeout(function(){ setStatus('Monitoring...'); }, 800); return; }
+
+  if (isDemoMode) {
+    setTimeout(() => setStatus('Monitoring...'), 600);
+    return;
+  }
+
   if (!player) return;
 
-var muteDuration = 900; // 900ms mute window
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const p = player;
+  const targetVolume = userVolume || 1;
 
-player.setVolume(0);
-setTimeout(function() {
-  player.setVolume(userVolume);
-  setStatus('Monitoring...');
-}, muteDuration);
+  // ============================
+  // MOBILE (pause fallback)
+  // ============================
+  if (isMobile) {
+    try {
+      p.pause();
 
+      setTimeout(() => {
+        p.resume();
+        setStatus('Monitoring...');
+      }, 220); // short + less jarring
+
+    } catch (e) {
+      console.warn('Mobile bleep failed:', e);
+    }
+
+    return;
+  }
+
+  // ============================
+  // DESKTOP (smooth fade)
+  // ============================
+  const fadeSteps = 5;
+  const fadeDuration = 180; // total fade out time
+  const stepTime = fadeDuration / fadeSteps;
+
+  let currentStep = 0;
+
+  // Fade OUT
+  const fadeOut = setInterval(() => {
+    currentStep++;
+    const vol = targetVolume * (1 - currentStep / fadeSteps);
+    p.setVolume(Math.max(0, vol));
+
+    if (currentStep >= fadeSteps) {
+      clearInterval(fadeOut);
+
+      // Hold mute briefly
+      setTimeout(() => {
+
+        // Fade IN
+        let inStep = 0;
+
+        const fadeIn = setInterval(() => {
+          inStep++;
+          const vol = targetVolume * (inStep / fadeSteps);
+          p.setVolume(Math.min(targetVolume, vol));
+
+          if (inStep >= fadeSteps) {
+            clearInterval(fadeIn);
+            setStatus('Monitoring...');
+          }
+
+        }, stepTime);
+
+      }, 120); // mute hold window
+
+    }
+
+  }, stepTime);
 }
 
 function playBleepTone() {
