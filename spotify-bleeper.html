@@ -870,11 +870,22 @@ function doBleep() {
   if (isDemoMode) { setTimeout(function(){ setStatus('Monitoring...'); }, 800); return; }
   if (!player) return;
 
-  player.pause();
-setTimeout(function() {
-  player.resume();
-  setStatus('Monitoring...');
-}, 900); // 900 ms mute window
+  player.getCurrentState().then(function(state) {
+  if (state && state.position !== undefined) {
+    var muteStartPosition = state.position;
+
+    player.pause().then(function() {
+      setTimeout(function() {
+        // Seek forward by the mute duration to stay in sync
+        player.seek(muteStartPosition + 900).then(function() {
+          player.resume().then(function() {
+            setStatus('Monitoring...');
+          });
+        });
+      }, 900); // 900 ms mute window
+    });
+  }
+});
 }
 
 function playBleepTone() {
