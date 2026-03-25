@@ -870,23 +870,13 @@ function doBleep() {
   if (isDemoMode) { setTimeout(function(){ setStatus('Monitoring...'); }, 800); return; }
   if (!player) return;
 
-var muteDuration = 700; // Reduced from 900ms for mobile
+var muteDuration = 900; // 900ms mute window
 
-player.getCurrentState().then(function(state) {
-  if (state && state.position !== undefined) {
-    var muteStartPosition = state.position;
-
-    player.pause().then(function() {
-      setTimeout(function() {
-        player.seek(muteStartPosition + muteDuration).then(function() {
-          player.resume().then(function() {
-            setStatus('Monitoring...');
-          });
-        });
-      }, muteDuration);
-    });
-  }
-});
+player.setVolume(0);
+setTimeout(function() {
+  player.setVolume(userVolume);
+  setStatus('Monitoring...');
+}, muteDuration);
 
 }
 
