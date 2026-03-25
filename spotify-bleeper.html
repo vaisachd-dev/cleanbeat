@@ -355,6 +355,11 @@ function setSyncBadge(mode) {
   }
 }
 
+// IOS Checker
+function isIOS() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent);
+}
+  
 // ─────────────────────────────────────────
 // PKCE AUTH
 // ─────────────────────────────────────────
@@ -924,19 +929,75 @@ function checkBleeps(posMs) {
 
 function doBleep() {
   if (!isPlaying) return;
+
   flashBleep();
-  setStatus('🔔 BLEEP — bad word muted!', true);
-  if (isDemoMode) { setTimeout(function(){ setStatus('Monitoring...'); }, 800); return; }
+  setStatus('🔔 BLEEP — filtering explicit word!', true);
+
+  // Detect iOS (Chrome + Safari both use WebKit)
+  var isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+
+  // DEMO MODE (always works)
+  if (isDemoMode) {
+    playBleepTone();
+    setTimeout(function() {
+      setStatus('Monitoring...');
+    }, 700);
+    return;
+  }
+
   if (!player) return;
 
-  // Mute for 1 second - covers most profane words regardless of timing
-  player.setVolume(0);
-  setTimeout(function() {
-    player.setVolume(userVolume);
-    setStatus('Monitoring...');
-  }, 900); // 900 ms mute window
-}
+  // ─────────────────────────────────────────
+  // 🍎 iOS FALLBACK (skip instead of mute)
+  // ─────────────────────────────────────────
+  if (isiOS) {
+    player.getCurrentState().then(function(state) {
+      if (!state) return;
 
+      var currentPos = state.position;
+
+      // Skip ahead ~700ms to jump over the bad word
+      var skipTo = currentPos + 700;
+
+      player.seek(skipTo).catch(function(){});
+
+      // Optional: play beep so user knows filter triggered
+      playBleepTone();
+
+      setTimeout(function() {
+        setStatus('Monitoring...');
+      }, 600);
+    });
+
+    return;
+  }
+
+  // ─────────────────────────────────────────
+  // 💻 DESKTOP / ANDROID (true mute)
+  // ─────────────────────────────────────────
+  try {
+    // Immediately mute
+    player.setVolume(0);
+
+    // Optional beep sound
+    playBleepTone();
+
+    // Keep muted long enough to cover most words
+    setTimeout(function() {
+      player.setVolume(userVolume);
+      setStatus('Monitoring...');
+    }, 1000); // 1 second window
+
+  } catch (e) {
+    console.warn('Bleep failed, falling back to skip:', e);
+
+    // Fallback if mute fails
+    player.getCurrentState().then(function(state) {
+      if (!state) return;
+      player.seek(state.position + 700).catch(function(){});
+    });
+  }
+}
 
 function playBleepTone() {
   try {
