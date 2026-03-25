@@ -682,39 +682,76 @@ function applyLyrics(mode, lines, trackName, artist) {
   lyricsLines = lines;
 
   if (mode === 'synced') {
-    // Build bleep schedule — only from synced timestamps
-    // Updated to handle multiple profane words per line
-bleepPoints = [];
-var bleepId = 0;
 
-lines.forEach(function(line) {
-  if (lineHasBadWord(line.text)) {
-    // Count individual profane words in this line
-    var words = line.text.toLowerCase().split(/\s+/);
-    var bad = getBadWords();
+    bleepPoints = [];
+    var bleepId = 0;
 
-    for (var w = 0; w < words.length; w++) {
-      var normalized = words[w].replace(/[^a-z]/g, '');
-      for (var b = 0; b < bad.length; b++) {
-        if (normalized === bad[b] || normalized.startsWith(bad[b])) {
-          // Add separate entry for each profane word
-          // Stagger bleeps slightly for multiple words on same line
-var wordOffset = (w * 200); // 200ms offset per word position
-bleepPoints.push({
-  time: line.time + wordOffset,
-  id: bleepId++,
-  word: words[w]
-});
-          break;
+    const EARLY_OFFSET = 200;        // start earlier (fixes late start)
+    const LINE_DURATION = 1400;      // avg line duration (tunable)
+    const MIN_WORD_GAP = 80;         // prevents overlap spam
+
+    lines.forEach(function(line, lineIndex) {
+
+      if (!lineHasBadWord(line.text)) return;
+
+      var words = line.text.split(/\s+/);
+      var bad = getBadWords();
+      var totalWords = words.length;
+
+      words.forEach(function(word, w) {
+
+        var normalized = word.toLowerCase().replace(/[^a-z]/g, '');
+
+        var isBad = bad.some(function(bw) {
+          return normalized === bw || normalized.startsWith(bw);
+        });
+
+        if (!isBad) return;
+
+        // ============================
+        // BETTER WORD TIMING
+        // ============================
+
+        // Position of word in line (0 → 1)
+        var positionRatio = totalWords > 1 ? (w / (totalWords - 1)) : 0;
+
+        // Spread words across estimated line duration
+        var wordOffset = positionRatio * LINE_DURATION;
+
+        // First word gets special handling (starts immediately)
+        if (w === 0) {
+          wordOffset = 0;
         }
-      }
-    }
-  }
-});
+
+        // Final computed time
+        var bleepTime = line.time + wordOffset - EARLY_OFFSET;
+
+        // Prevent negative times
+        bleepTime = Math.max(0, bleepTime);
+
+        // Avoid too-close bleeps (important for rap)
+        if (bleepPoints.length > 0) {
+          var last = bleepPoints[bleepPoints.length - 1];
+          if (Math.abs(last.time - bleepTime) < MIN_WORD_GAP) {
+            bleepTime += MIN_WORD_GAP;
+          }
+        }
+
+        bleepPoints.push({
+          time: bleepTime,
+          id: bleepId++,
+          word: word,
+          lineIndex: lineIndex
+        });
+
+      });
+
+    });
+
     setSyncBadge('synced');
     setStatus('Synced lyrics loaded — filter armed with ' + bleepPoints.length + ' bleep point(s).');
+
   } else {
-    // Plain: show lyrics for display only, no bleeping
     bleepPoints = [];
     setSyncBadge('plain');
     setStatus('Plain lyrics loaded (display only) — timing not accurate enough to bleep safely.');
@@ -868,8 +905,8 @@ function doBleep() {
 
   const now = Date.now();
 
-  // Prevent overlapping bleeps (important for rapid lyrics)
-  if (window.__lastBleepTime && now - window.__lastBleepTime < 400) {
+  // Prevent overlap but allow faster triggers
+  if (window.__lastBleepTime && now - window.__lastBleepTime < 250) {
     return;
   }
   window.__lastBleepTime = now;
@@ -878,7 +915,7 @@ function doBleep() {
   setStatus('🔔 BLEEP — bad word muted!', true);
 
   if (isDemoMode) {
-    setTimeout(() => setStatus('Monitoring...'), 600);
+    setTimeout(() => setStatus('Monitoring...'), 700);
     return;
   }
 
@@ -889,7 +926,7 @@ function doBleep() {
   const targetVolume = userVolume || 1;
 
   // ============================
-  // MOBILE (pause fallback)
+  // MOBILE (pause-based)
   // ============================
   if (isMobile) {
     try {
@@ -898,7 +935,7 @@ function doBleep() {
       setTimeout(() => {
         p.resume();
         setStatus('Monitoring...');
-      }, 220); // short + less jarring
+      }, 320); // longer = better coverage
 
     } catch (e) {
       console.warn('Mobile bleep failed:', e);
@@ -908,46 +945,51 @@ function doBleep() {
   }
 
   // ============================
-  // DESKTOP (smooth fade)
+  // DESKTOP (FAST CUT + HOLD + SMOOTH RETURN)
   // ============================
-  const fadeSteps = 5;
-  const fadeDuration = 180; // total fade out time
-  const stepTime = fadeDuration / fadeSteps;
 
-  let currentStep = 0;
+  const CUT_TIME = 50;       // fast drop (almost instant)
+  const HOLD_TIME = 380;     // covers full word
+  const FADE_IN_TIME = 180;  // smooth recovery
 
-  // Fade OUT
-  const fadeOut = setInterval(() => {
-    currentStep++;
-    const vol = targetVolume * (1 - currentStep / fadeSteps);
-    p.setVolume(Math.max(0, vol));
+  try {
+    // FAST CUT (almost immediate mute)
+    p.setVolume(0);
 
-    if (currentStep >= fadeSteps) {
-      clearInterval(fadeOut);
+    // HOLD mute long enough for full word
+    setTimeout(() => {
 
-      // Hold mute briefly
+      // Smooth fade back in
+      const steps = 6;
+      let step = 0;
+      const stepTime = FADE_IN_TIME / steps;
+
+      const fadeIn = setInterval(() => {
+        step++;
+        const vol = targetVolume * (step / steps);
+        p.setVolume(Math.min(targetVolume, vol));
+
+        if (step >= steps) {
+          clearInterval(fadeIn);
+          setStatus('Monitoring...');
+        }
+
+      }, stepTime);
+
+    }, HOLD_TIME);
+
+  } catch (e) {
+    console.warn('Desktop bleep failed:', e);
+
+    // fallback
+    try {
+      p.pause();
       setTimeout(() => {
-
-        // Fade IN
-        let inStep = 0;
-
-        const fadeIn = setInterval(() => {
-          inStep++;
-          const vol = targetVolume * (inStep / fadeSteps);
-          p.setVolume(Math.min(targetVolume, vol));
-
-          if (inStep >= fadeSteps) {
-            clearInterval(fadeIn);
-            setStatus('Monitoring...');
-          }
-
-        }, stepTime);
-
-      }, 120); // mute hold window
-
-    }
-
-  }, stepTime);
+        p.resume();
+        setStatus('Monitoring...');
+      }, 300);
+    } catch {}
+  }
 }
 
 function playBleepTone() {
