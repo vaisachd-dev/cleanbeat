@@ -871,13 +871,10 @@ function doBleep() {
   if (!player) return;
 
   // Mute for 1 second - covers most profane words regardless of timing
-  player.setVolume(0);
-  setTimeout(function() {
-    player.setVolume(userVolume);
-    setStatus('Monitoring...');
-  }, 900); // 900 ms mute window
-}
-
+  player.pause();
+setTimeout(function() {
+  player.resume();
+}, 900); //900ms mute window
 
 function playBleepTone() {
   try {
