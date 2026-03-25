@@ -871,13 +871,23 @@ function doBleep() {
   if (!player) return;
 
   // Mute for 1 second - covers most profane words regardless of timing
-  player.setVolume(0);
-  setTimeout(function() {
-    player.setVolume(userVolume);
-    setStatus('Monitoring...');
-  }, 900); // 900 ms mute window
-}
+  
+  player.getCurrentState().then(function(state) {
+  if (state) {
+    var pausePosition = state.position;
 
+    player.pause().then(function() {
+      setTimeout(function() {
+        // Resume from the same position
+        player.seek(pausePosition + 900).then(function() {
+          player.resume();
+          setStatus('Monitoring...');
+        });
+      }, 900); // 900 ms mute window
+    });
+  }
+});
+}
 
 function playBleepTone() {
   try {
