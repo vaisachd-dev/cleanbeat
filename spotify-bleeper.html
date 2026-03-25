@@ -243,6 +243,12 @@ var lyricsLines = [];    // [{time:ms, text:string}]
 var bleepPoints = [];    // [{time:ms}] — only populated when lyricsMode === 'synced'
 var firedSet = new Set();
 
+//AUDIO
+var audioContext = null;
+var gainNode = null;
+var sourceNode = null;
+var audioContextInitialized = false;
+ 
 // Demo
 var demoTimer = null;
 var demoPos = 0;
@@ -482,6 +488,59 @@ function initSDK() {
   };
 }
 
+// ===== INITIALIZE WEB AUDIO =====
+function initializeWebAudio() {
+  if (audioContextInitialized || !player) {
+    console.log('Web Audio already initialized or player not ready');
+    return;
+  }
+  
+  try {
+    // Create audio context
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create gain node for volume control
+    gainNode = audioContext.createGain();
+    gainNode.gain.value = 1.0;
+    
+    // Find Spotify's audio element
+    const audioElement = document.querySelector('audio');
+    
+    if (audioElement && !sourceNode) {
+      // Connect audio element to Web Audio API
+      sourceNode = audioContext.createMediaElementSource(audioElement);
+      sourceNode.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Override player.setVolume to use Web Audio API
+      const originalSetVolume = player.setVolume.bind(player);
+      player.setVolume = function(volume) {
+        if (gainNode) {
+          gainNode.gain.value = volume;
+        }
+        // Still call original for Spotify's tracking
+        return originalSetVolume(volume);
+      };
+      
+      audioContextInitialized = true;
+      console.log('✓ Web Audio API initialized - mobile muting enabled');
+      
+      // Resume audio context if suspended (iOS requirement)
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(function() {
+          console.log('✓ Audio context resumed');
+        });
+      }
+    } else {
+      console.warn('Audio element not found yet, will retry...');
+      // Retry after another delay
+      setTimeout(initializeWebAudio, 1000);
+    }
+  } catch (error) {
+    console.error('Web Audio API initialization failed:', error);
+  }
+}
+  
 // ─────────────────────────────────────────
 // PLAYBACK CONTROL
 // ─────────────────────────────────────────
@@ -956,6 +1015,13 @@ window.addEventListener('load', async function() {
     initSDK();
   }
 });
+
+window.addEventListener('click', function() {
+  if (audioContext && audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+}, { once: true });
+  
 </script>
 </body>
 </html>
