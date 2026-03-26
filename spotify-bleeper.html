@@ -248,6 +248,7 @@ var audioContext = null;
 var gainNode = null;
 var sourceNode = null;
 var audioContextInitialized = false;
+var bleepCtx = null;  
  
 // Demo
 var demoTimer = null;
@@ -948,6 +949,7 @@ function doBleep() {
 
   if (mobile) {
     // 📱 Mobile: just play beep
+    console.log('Audio state:', bleepCtx.state);
     playBleepTone();
     
     setTimeout(function() {
@@ -972,17 +974,33 @@ function doBleep() {
 
 function playBleepTone() {
   try {
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
+    if (!bleepCtx) {
+      console.warn('AudioContext not initialized yet');
+      return;
+    }
+
+    if (bleepCtx.state === 'suspended') {
+      bleepCtx.resume();
+    }
+
+    var osc = bleepCtx.createOscillator();
+    var gain = bleepCtx.createGain();
+
+    osc.connect(gain);
+    gain.connect(bleepCtx.destination);
+
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(1000, ctx.currentTime);
-    gain.gain.setValueAtTime(0.35, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.7);
-  } catch(e) {}
+    osc.frequency.setValueAtTime(1000, bleepCtx.currentTime);
+
+    gain.gain.setValueAtTime(0.4, bleepCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, bleepCtx.currentTime + 0.5);
+
+    osc.start(bleepCtx.currentTime);
+    osc.stop(bleepCtx.currentTime + 0.5);
+
+  } catch (e) {
+    console.warn('Bleep failed:', e);
+  }
 }
 
 // ─────────────────────────────────────────
@@ -1053,6 +1071,20 @@ window.addEventListener('click', function() {
     audioContext.resume();
   }
 }, { once: true });
+
+window.addEventListener('click', function initAudio() {
+  if (!bleepCtx) {
+    bleepCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  if (bleepCtx.state === 'suspended') {
+    bleepCtx.resume();
+  }
+
+  console.log('✅ AudioContext initialized');
+
+  window.removeEventListener('click', initAudio);
+});
   
 </script>
 </body>
