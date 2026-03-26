@@ -924,19 +924,46 @@ function checkBleeps(posMs) {
 
 function doBleep() {
   if (!isPlaying) return;
+
   flashBleep();
   setStatus('🔔 BLEEP — bad word muted!', true);
+
   if (isDemoMode) {
+    playBleepTone();
     setTimeout(function(){ setStatus('Monitoring...'); }, 800);
     return;
   }
+
   if (!player) return;
-    // Desktop: Mute for 1 second - covers most profane words regardless of timing
-    player.setVolume(0);
+
+  // ✅ Correct mobile detection call
+  var mobile = isMobile();
+
+  console.log('isMobile:', mobile);
+  console.log('userVolume:', userVolume);
+
+  if (mobile) {
+    // 📱 Mobile: just play beep
+    playBleepTone();
+    
     setTimeout(function() {
-      player.setVolume(userVolume);
       setStatus('Monitoring...');
-    }, 900); // 900 ms mute window
+    }, 900);
+
+  } else {
+    // 💻 Desktop: real mute
+    try {
+      player.setVolume(0);
+
+      setTimeout(function() {
+        player.setVolume(userVolume);
+        setStatus('Monitoring...');
+      }, 900);
+
+    } catch (e) {
+      console.warn('Mute failed:', e);
+    }
+  }
 }
 
 function playBleepTone() {
