@@ -931,21 +931,12 @@ function doBleep() {
     return;
   }
   if (!player) return;
-
-  // Check if mobile - if so, play beep tone instead of muting
-  if (isMobile) {
-    playBeepTone();
-    setTimeout(function() {
-      setStatus('Monitoring...');
-    }, 700);
-  } else {
     // Desktop: Mute for 1 second - covers most profane words regardless of timing
     player.setVolume(0);
     setTimeout(function() {
       player.setVolume(userVolume);
       setStatus('Monitoring...');
     }, 900); // 900 ms mute window
-  }
 }
 
 function playBleepTone() {
