@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+<audio id="bleepAudio" preload="auto">
+  <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+</audio>  
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -247,8 +250,7 @@ var firedSet = new Set();
 var audioContext = null;
 var gainNode = null;
 var sourceNode = null;
-var audioContextInitialized = false;
-var bleepCtx = null;  
+var audioContextInitialized = false; 
  
 // Demo
 var demoTimer = null;
@@ -949,7 +951,7 @@ function doBleep() {
 
   if (mobile) {
     // 📱 Mobile: just play beep
-    console.log('Audio state:', bleepCtx.state);
+    player.seek(currentPos + 700);
     playBleepTone();
     
     setTimeout(function() {
@@ -974,29 +976,18 @@ function doBleep() {
 
 function playBleepTone() {
   try {
-    if (!bleepCtx) {
-      console.warn('AudioContext not initialized yet');
-      return;
+    var audio = document.getElementById('bleepAudio');
+    if (!audio) return;
+
+    audio.currentTime = 0;
+
+    var playPromise = audio.play();
+
+    if (playPromise !== undefined) {
+      playPromise.catch(function(err) {
+        console.warn('Beep play blocked:', err);
+      });
     }
-
-    if (bleepCtx.state === 'suspended') {
-      bleepCtx.resume();
-    }
-
-    var osc = bleepCtx.createOscillator();
-    var gain = bleepCtx.createGain();
-
-    osc.connect(gain);
-    gain.connect(bleepCtx.destination);
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1000, bleepCtx.currentTime);
-
-    gain.gain.setValueAtTime(0.4, bleepCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, bleepCtx.currentTime + 0.5);
-
-    osc.start(bleepCtx.currentTime);
-    osc.stop(bleepCtx.currentTime + 0.5);
 
   } catch (e) {
     console.warn('Bleep failed:', e);
@@ -1072,19 +1063,15 @@ window.addEventListener('click', function() {
   }
 }, { once: true });
 
-window.addEventListener('click', function initAudio() {
-  if (!bleepCtx) {
-    bleepCtx = new (window.AudioContext || window.webkitAudioContext)();
+window.addEventListener('click', function() {
+  var audio = document.getElementById('bleepAudio');
+  if (audio) {
+    audio.play().then(function() {
+      audio.pause();
+      audio.currentTime = 0;
+    }).catch(()=>{});
   }
-
-  if (bleepCtx.state === 'suspended') {
-    bleepCtx.resume();
-  }
-
-  console.log('✅ AudioContext initialized');
-
-  window.removeEventListener('click', initAudio);
-});
+}, { once: true });  
   
 </script>
 </body>
