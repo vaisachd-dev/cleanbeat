@@ -922,6 +922,10 @@ function checkBleeps(posMs) {
   }
 }
 
+function isMobile() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 function doBleep() {
   if (!isPlaying) return;
 
