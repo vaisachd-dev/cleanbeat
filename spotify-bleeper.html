@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -355,11 +356,6 @@ function setSyncBadge(mode) {
   }
 }
 
-// IOS Checker
-function isIOS() {
-  return /iPhone|iPad|iPod/.test(navigator.userAgent);
-}
-  
 // ─────────────────────────────────────────
 // PKCE AUTH
 // ─────────────────────────────────────────
@@ -763,11 +759,9 @@ lines.forEach(function(line) {
         if (normalized === bad[b] || normalized.startsWith(bad[b])) {
           // Add separate entry for each profane word
           // Stagger bleeps slightly for multiple words on same line
-var BASE_ADVANCE = 250; // shift earlier globally
-var wordOffset = (w * 180) - BASE_ADVANCE;
-
+var wordOffset = (w * 200); // 200ms offset per word position
 bleepPoints.push({
-  time: Math.max(0, line.time + wordOffset),
+  time: line.time + wordOffset,
   id: bleepId++,
   word: words[w]
 });
@@ -931,73 +925,27 @@ function checkBleeps(posMs) {
 
 function doBleep() {
   if (!isPlaying) return;
-
   flashBleep();
-  setStatus('🔔 BLEEP — filtering explicit word!', true);
-
-  // Detect iOS (Chrome + Safari both use WebKit)
-  var isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-
-  // DEMO MODE (always works)
+  setStatus('🔔 BLEEP — bad word muted!', true);
   if (isDemoMode) {
-    playBleepTone();
-    setTimeout(function() {
-      setStatus('Monitoring...');
-    }, 700);
+    setTimeout(function(){ setStatus('Monitoring...'); }, 800);
     return;
   }
-
   if (!player) return;
 
-  // ─────────────────────────────────────────
-  // 🍎 iOS FALLBACK (skip instead of mute)
-  // ─────────────────────────────────────────
-  if (isiOS) {
-    player.getCurrentState().then(function(state) {
-      if (!state) return;
-
-      var currentPos = state.position;
-
-      // Skip ahead ~700ms to jump over the bad word
-      var skipTo = currentPos + 700;
-
-      player.seek(skipTo).catch(function(){});
-
-      // Optional: play beep so user knows filter triggered
-      if (isMobile()) playBleepTone();
-
-      setTimeout(function() {
-        setStatus('Monitoring...');
-      }, 600);
-    });
-
-    return;
-  }
-
-  // ─────────────────────────────────────────
-  // 💻 DESKTOP / ANDROID (true mute)
-  // ─────────────────────────────────────────
-  try {
-    // Immediately mute
+  // Check if mobile - if so, play beep tone instead of muting
+  if (isMobile) {
+    playBeepTone();
+    setTimeout(function() {
+      setStatus('Monitoring...');
+    }, 900);
+  } else {
+    // Desktop: Mute for 1 second - covers most profane words regardless of timing
     player.setVolume(0);
-
-    // Optional beep sound
-    //playBleepTone();
-
-    // Keep muted long enough to cover most words
     setTimeout(function() {
       player.setVolume(userVolume);
       setStatus('Monitoring...');
-    }, 1000); // 1 second window
-
-  } catch (e) {
-    console.warn('Bleep failed, falling back to skip:', e);
-
-    // Fallback if mute fails
-    player.getCurrentState().then(function(state) {
-      if (!state) return;
-      player.seek(state.position + 700).catch(function(){});
-    });
+    }, 900); // 900 ms mute window
   }
 }
 
