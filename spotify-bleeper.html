@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <audio id="bleepAudio" preload="auto">
@@ -924,35 +923,24 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-function tryResumePlayback() {
-  if (!isMobile() || !player) return;
-
-  if (window._mobilePaused && Date.now() >= window._mobileResumeAt) {
-    try {
-      player.play();
-      window._mobilePaused = false;
-    } catch (e) {
-      // ignore if blocked
-    }
-  }
-}
-  
 function doBleep(bleep, index) {
   if (!player) return;
 
   // 📱 MOBILE → seek-based skipping (most reliable)
   if (isMobile()) {
-      try {
-      // Soft pause instead of seek (prevents skipping words)
-      if (typeof player.pause === "function") {
-        player.pause();
-        window._mobileResumeAt = Date.now() + 900;
-        window._mobilePaused = true;
-      }
-    } catch (e) {
-      // fail silently
-    }
+    var nextBleep = bleepPoints[index + 1];
 
+    var SAFETY_BUFFER = 150;
+
+    var targetTime = nextBleep
+      ? nextBleep.time
+      : bleep.time + 400;
+
+    var skipTo = targetTime + SAFETY_BUFFER;
+
+    skipTo = Math.max(bleep.time, skipTo);
+
+    player.seek(skipTo);
     return;
   }
   
@@ -1066,10 +1054,6 @@ window.addEventListener('click', function() {
     }).catch(()=>{});
   }
 }, { once: true });  
-
-document.addEventListener("touchstart", tryResumePlayback);
-document.addEventListener("touchend", tryResumePlayback);
-document.addEventListener("click", tryResumePlayback);
   
 </script>
 </body>
