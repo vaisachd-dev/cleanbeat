@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <audio id="bleepAudio" preload="auto">
@@ -903,7 +904,7 @@ function highlightLine(posMs) {
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
-  var EARLY_TRIGGER = isMobile() ? 700 : 600;
+  var EARLY_TRIGGER = isMobile() ? 800 : 600;
 
   for (let i = 0; i < bleepPoints.length; i++) {
     let bleep = bleepPoints[i];
@@ -930,14 +931,18 @@ function doBleep(bleep, index) {
   if (isMobile()) {
     var nextBleep = bleepPoints[index + 1];
 
-  if (nextBleep) {
-    // VERY SMALL forward move (prevents stalling, not skipping)
-    var smallStep = 50; // 50ms
+    var SAFETY_BUFFER = 300;
 
-    player.seek(posMs + smallStep);
-  }
+    var targetTime = nextBleep
+      ? nextBleep.time
+      : bleep.time + 400;
 
-  return;
+    var skipTo = targetTime + SAFETY_BUFFER;
+
+    skipTo = Math.max(bleep.time, skipTo);
+
+    player.seek(skipTo);
+    return;
   }
   
   // 🖥 DESKTOP → volume mute (smoother, no seek)
