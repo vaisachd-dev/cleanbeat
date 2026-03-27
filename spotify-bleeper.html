@@ -914,7 +914,7 @@ function checkBleeps(posMs) {
   firedSet.add(bleep.id);
       (function(delay) {
         // Fire 500ms early
-        setTimeout(function() { doBleep(); }, Math.max(0, delay - 500));
+        setTimeout(function() { doBleep(bleep.time); }, Math.max(0, delay - 500));
       })(diff);
 
       // Allow re-fire if user seeks (5s cooldown)
@@ -929,7 +929,7 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-function doBleep() {
+function doBleep(targetTime) {
   if (!isPlaying) return;
 
   flashBleep();
@@ -953,9 +953,8 @@ function doBleep() {
     // 📱 Mobile: Skip ahead
     player.getCurrentState().then(function(state) {
       if (!state) return;
-      var currentPos = state.position;
-      // Skip ahead ~700ms to jump over the bad word
-      var skipTo = currentPos + 700;
+      var SKIP_OFFSET = Math.min(700, 300 + (bleep.word?.length || 4) * 80);
+      var skipTo = targetTime + SKIP_OFFSET;
       player.seek(skipTo).catch(function(){});
       
       // 📱 Mobile Optional: play beep so user knows filter triggered
