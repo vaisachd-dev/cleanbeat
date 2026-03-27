@@ -903,23 +903,18 @@ function highlightLine(posMs) {
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
-  for (var i = 0; i < bleepPoints.length; i++) {
-    var bleep = bleepPoints[i];
-    var t = bleep.time;
-    var diff = t - posMs;
+  var EARLY_TRIGGER = isMobile() ? 1000 : 600;
 
-    // Wider detection window: -300ms to +300ms
-    if (diff >= -300 && diff < 300 && !firedSet.has(bleep.id)) {
-  firedSet.add(bleep.id);
-      (function(delay) {
-        // Fire 500ms early
-        setTimeout(function() { doBleep(); }, Math.max(0, delay - 500));
-      })(diff);
+  for (let i = 0; i < bleepPoints.length; i++) {
+    let bleep = bleepPoints[i];
 
-      // Allow re-fire if user seeks (5s cooldown)
-      (function(bt) {
-        setTimeout(function() { firedSet.delete(bt); }, 5000);
-      })(bleep.id);
+    if (bleep._fired) continue;
+
+    let diff = bleep.time - posMs;
+
+    if (diff >= -150 && diff <= EARLY_TRIGGER) {
+      bleep._fired = true;
+      doBleep(bleep, i);
     }
   }
 }
@@ -928,52 +923,36 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-function doBleep() {
-  if (!isPlaying) return;
-
-  flashBleep();
-  setStatus('🔔 BLEEP — bad word muted!', true);
-
-  if (isDemoMode) {
-    playBleepTone();
-    setTimeout(function(){ setStatus('Monitoring...'); }, 800);
-    return;
-  }
-
+function doBleep(bleep, index) {
   if (!player) return;
 
-  // ✅ Correct mobile detection call
-  var mobile = isMobile();
+  // 📱 MOBILE → seek-based skipping (most reliable)
+  if (isMobile()) {
+    var nextBleep = bleepPoints[index + 1];
 
-  console.log('isMobile:', mobile);
-  console.log('userVolume:', userVolume);
+    var SAFETY_BUFFER = 300;
 
-  if (mobile) {
-    // 📱 Mobile: Skip ahead
-    player.getCurrentState().then(function(state) {
-      if (!state) return;
-      var currentPos = state.position;
-      // Skip ahead ~700ms to jump over the bad word
-      var skipTo = currentPos + 700;
-      player.seek(skipTo).catch(function(){});
+    var targetTime = nextBleep
+      ? nextBleep.time
+      : bleep.time + 400;
 
-      setTimeout(function() {
-        setStatus('Monitoring...');
-      }, 900);
-    });
-  } else {
-    // 💻 Desktop: real mute
-    try {
-      player.setVolume(0);
+    var skipTo = targetTime + SAFETY_BUFFER;
 
-      setTimeout(function() {
-        player.setVolume(userVolume);
-        setStatus('Monitoring...');
-      }, 900);
+    skipTo = Math.max(bleep.time, skipTo);
 
-    } catch (e) {
-      console.warn('Mute failed:', e);
-    }
+    player.seek(skipTo);
+    return;
+  }
+  
+  // 🖥 DESKTOP → volume mute (smoother, no seek)
+  try {
+    player.setVolume(0);
+
+    setTimeout(function () {
+      player.setVolume(1);
+    }, 900);
+  } catch (e) {
+    // fail silently if not supported
   }
 }
 
