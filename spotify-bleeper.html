@@ -908,12 +908,12 @@ function checkBleeps(posMs) {
     const t = bleep.time;
     const diff = t - posMs;
 
-    // Detection window: -300ms to +300ms
-    if (diff >= -300 && diff < 300 && !firedSet.has(bleep.id)) {
+    // Detection window: -500ms to +500ms
+    if (diff >= -500 && diff < 500 && !firedSet.has(bleep.id)) {
       firedSet.add(bleep.id);
 
       // Fire slightly early to catch beginning words
-      const delay = Math.max(0, diff - 300);
+      const delay = Math.max(0, diff - 500);
 
       setTimeout(() => {
         doBleep(bleep); // ✅ pass full object
@@ -950,7 +950,7 @@ function doBleep(bleep) {
   var mobile = isMobile();
 
   if (mobile) {
-    var SKIP_OFFSET = Math.min(700, 300 + (bleep.word?.length || 4) * 80);
+    var SKIP_OFFSET = Math.min(900, 600 + (bleep.word?.length || 4) * 80);
     var skipTo = targetTime + SKIP_OFFSET;
 
     player.seek(skipTo).catch(function(){});
