@@ -904,25 +904,27 @@ function highlightLine(posMs) {
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
   for (let i = 0; i < bleepPoints.length; i++) {
-    const bleep = bleepPoints[i];
-    const t = bleep.time;
-    const diff = t - posMs;
+    let bleep = bleepPoints[i];
+    let t = bleep.time;
+    let diff = t - posMs;
 
-    // Detection window: -500ms to +500ms
-    if (diff >= -500 && diff < 500 && !firedSet.has(bleep.id)) {
+    // Detection window
+    if (diff >= -300 && diff < 300 && !firedSet.has(bleep.id)) {
       firedSet.add(bleep.id);
 
-      // Fire slightly early to catch beginning words
-      const delay = Math.max(0, diff - 500);
+      // Capture CURRENT bleep safely
+      (function(b, delay) {
+        setTimeout(function() {
+          doBleep(b);   // ✅ pass full object
+        }, Math.max(0, delay - 500)); // early trigger
+      })(bleep, diff);
 
-      setTimeout(() => {
-        doBleep(bleep); // ✅ pass full object
-      }, delay);
-
-      // Allow re-fire if user seeks (5s cooldown)
-      setTimeout(() => {
-        firedSet.delete(bleep.id);
-      }, 5000);
+      // Reset for seek
+      (function(id) {
+        setTimeout(function() {
+          firedSet.delete(id);
+        }, 5000);
+      })(bleep.id);
     }
   }
 }
@@ -933,8 +935,6 @@ function isMobile() {
 
 function doBleep(bleep) {
   if (!isPlaying) return;
-
-  var targetTime = bleep.time;
 
   flashBleep();
   setStatus('🔔 BLEEP — bad word muted!', true);
@@ -950,22 +950,40 @@ function doBleep(bleep) {
   var mobile = isMobile();
 
   if (mobile) {
-    var SKIP_OFFSET = Math.min(900, 600 + (bleep.word?.length || 4) * 80);
-    var skipTo = targetTime + SKIP_OFFSET;
+    // 📱 SMART SKIP (same logic as desktop mute timing)
+    player.getCurrentState().then(function(state) {
+      if (!state) return;
 
-    player.seek(skipTo).catch(function(){});
+      // Dynamic skip based on word length
+      var wordLen = (bleep.word && bleep.word.length) ? bleep.word.length : 4;
 
-    setTimeout(function() {
-      setStatus('Monitoring...');
-    }, 900);
+      var SKIP_OFFSET = Math.min(
+        900,                 // cap
+        300 + wordLen * 80   // base + per-char
+      );
+
+      var skipTo = state.position + SKIP_OFFSET;
+
+      player.seek(skipTo).catch(function(){});
+
+      setTimeout(function() {
+        setStatus('Monitoring...');
+      }, 900);
+    });
 
   } else {
-    player.setVolume(0);
+    // 💻 DESKTOP MUTE (unchanged)
+    try {
+      player.setVolume(0);
 
-    setTimeout(function() {
-      player.setVolume(userVolume);
-      setStatus('Monitoring...');
-    }, 900);
+      setTimeout(function() {
+        player.setVolume(userVolume);
+        setStatus('Monitoring...');
+      }, 900);
+
+    } catch (e) {
+      console.warn('Mute failed:', e);
+    }
   }
 }
 
