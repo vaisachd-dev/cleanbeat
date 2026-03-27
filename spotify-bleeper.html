@@ -930,11 +930,7 @@ function doBleep(bleep, index) {
   if (isMobile()) {
     var nextBleep = bleepPoints[index + 1];
 
-    var SAFETY_BUFFER = 150;
-
-    var targetTime = bleep.time + 400;
-
-    var skipTo = targetTime + SAFETY_BUFFER;
+    var skipTo = bleep.time + 400;
 
     player.seek(skipTo);
     return;
