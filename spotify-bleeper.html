@@ -924,24 +924,44 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
+function muteAudio() {
+  if (player && player.setVolume) {
+    player.setVolume(0);
+  } else if (player && player.setMuted) {
+    player.setMuted(true);
+  } else if (player && player.audio && player.audio.muted !== undefined) {
+    player.audio.muted = true;
+  }
+}
+
+function unmuteAudio() {
+  if (player && player.setVolume) {
+    player.setVolume(1);
+  } else if (player && player.setMuted) {
+    player.setMuted(false);
+  } else if (player && player.audio) {
+    player.audio.muted = false;
+  }
+}
+  
 function doBleep(bleep, index) {
   if (!player) return;
 
   // 📱 MOBILE → seek-based skipping (most reliable)
   if (isMobile()) {
-    var nextBleep = bleepPoints[index + 1];
+      try {
+      // Soft pause instead of seek (prevents skipping words)
+      if (typeof player.pause === "function") {
+        player.pause();
 
-    var SAFETY_BUFFER = 150;
+        setTimeout(function () {
+          player.play && player.play();
+        }, 500); // short, controlled gap
+      }
+    } catch (e) {
+      // fail silently
+    }
 
-    var targetTime = nextBleep
-      ? nextBleep.time
-      : bleep.time + 400;
-
-    var skipTo = targetTime + SAFETY_BUFFER;
-
-    skipTo = Math.max(bleep.time, skipTo);
-
-    player.seek(skipTo);
     return;
   }
   
