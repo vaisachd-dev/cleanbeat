@@ -924,23 +924,16 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-function muteAudio() {
-  if (player && player.setVolume) {
-    player.setVolume(0);
-  } else if (player && player.setMuted) {
-    player.setMuted(true);
-  } else if (player && player.audio && player.audio.muted !== undefined) {
-    player.audio.muted = true;
-  }
-}
+function tryResumePlayback() {
+  if (!isMobile() || !player) return;
 
-function unmuteAudio() {
-  if (player && player.setVolume) {
-    player.setVolume(1);
-  } else if (player && player.setMuted) {
-    player.setMuted(false);
-  } else if (player && player.audio) {
-    player.audio.muted = false;
+  if (window._mobilePaused && Date.now() >= window._mobileResumeAt) {
+    try {
+      player.play();
+      window._mobilePaused = false;
+    } catch (e) {
+      // ignore if blocked
+    }
   }
 }
   
@@ -953,10 +946,8 @@ function doBleep(bleep, index) {
       // Soft pause instead of seek (prevents skipping words)
       if (typeof player.pause === "function") {
         player.pause();
-
-        setTimeout(function () {
-          player.play && player.play();
-        }, 500); // short, controlled gap
+        window._mobileResumeAt = Date.now() + 900;
+        window._mobilePaused = true;
       }
     } catch (e) {
       // fail silently
@@ -1075,6 +1066,10 @@ window.addEventListener('click', function() {
     }).catch(()=>{});
   }
 }, { once: true });  
+
+document.addEventListener("touchstart", tryResumePlayback);
+document.addEventListener("touchend", tryResumePlayback);
+document.addEventListener("click", tryResumePlayback);
   
 </script>
 </body>
