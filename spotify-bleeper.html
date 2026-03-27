@@ -950,13 +950,21 @@ function doBleep() {
   console.log('userVolume:', userVolume);
 
   if (mobile) {
-    // 📱 Mobile: just play beep
-    playBleepTone();
-    
-    setTimeout(function() {
-      setStatus('Monitoring...');
-    }, 900);
+    // 📱 Mobile: Skip ahead
+    player.getCurrentState().then(function(state) {
+      if (!state) return;
+      var currentPos = state.position;
+      // Skip ahead ~700ms to jump over the bad word
+      var skipTo = currentPos + 700;
+      player.seek(skipTo).catch(function(){});
+      
+      // 📱 Mobile Optional: play beep so user knows filter triggered
+      //playBleepTone();
 
+      setTimeout(function() {
+        setStatus('Monitoring...');
+      }, 900);
+    });
   } else {
     // 💻 Desktop: real mute
     try {
