@@ -903,27 +903,22 @@ function highlightLine(posMs) {
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
-  for (let i = 0; i < bleepPoints.length; i++) {
-    let bleep = bleepPoints[i];
-    let t = bleep.time;
-    let diff = t - posMs;
+  for (var i = 0; i < bleepPoints.length; i++) {
+    var bleep = bleepPoints[i];
+    var t = bleep.time;
+    var diff = t - posMs;
 
-    // Detection window
+    // Wider detection window: -300ms to +300ms
     if (diff >= -300 && diff < 300 && !firedSet.has(bleep.id)) {
-      firedSet.add(bleep.id);
+  firedSet.add(bleep.id);
+      (function(delay) {
+        // Fire 500ms early
+        setTimeout(function() { doBleep(); }, Math.max(0, delay - 500));
+      })(diff);
 
-      // Capture CURRENT bleep safely
-      (function(b, delay) {
-        setTimeout(function() {
-          doBleep(b);   // ✅ pass full object
-        }, Math.max(0, delay - 500)); // early trigger
-      })(bleep, diff);
-
-      // Reset for seek
-      (function(id) {
-        setTimeout(function() {
-          firedSet.delete(id);
-        }, 5000);
+      // Allow re-fire if user seeks (5s cooldown)
+      (function(bt) {
+        setTimeout(function() { firedSet.delete(bt); }, 5000);
       })(bleep.id);
     }
   }
@@ -933,7 +928,7 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-function doBleep(bleep) {
+function doBleep() {
   if (!isPlaying) return;
 
   flashBleep();
@@ -947,32 +942,27 @@ function doBleep(bleep) {
 
   if (!player) return;
 
+  // ✅ Correct mobile detection call
   var mobile = isMobile();
 
+  console.log('isMobile:', mobile);
+  console.log('userVolume:', userVolume);
+
   if (mobile) {
-    // 📱 SMART SKIP (same logic as desktop mute timing)
+    // 📱 Mobile: Skip ahead
     player.getCurrentState().then(function(state) {
       if (!state) return;
-
-      // Dynamic skip based on word length
-      var wordLen = (bleep.word && bleep.word.length) ? bleep.word.length : 4;
-
-      var SKIP_OFFSET = Math.min(
-        900,                 // cap
-        300 + wordLen * 80   // base + per-char
-      );
-
-      var skipTo = state.position + SKIP_OFFSET;
-
+      var currentPos = state.position;
+      // Skip ahead ~700ms to jump over the bad word
+      var skipTo = currentPos + 700;
       player.seek(skipTo).catch(function(){});
 
       setTimeout(function() {
         setStatus('Monitoring...');
       }, 900);
     });
-
   } else {
-    // 💻 DESKTOP MUTE (unchanged)
+    // 💻 Desktop: real mute
     try {
       player.setVolume(0);
 
