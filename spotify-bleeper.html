@@ -904,7 +904,7 @@ function highlightLine(posMs) {
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
-  var EARLY_TRIGGER = isMobile() ? 800 : 600;
+  var EARLY_TRIGGER = isMobile() ? 650 : 600;
 
   for (let i = 0; i < bleepPoints.length; i++) {
     let bleep = bleepPoints[i];
@@ -931,7 +931,7 @@ function doBleep(bleep, index) {
   if (isMobile()) {
     var nextBleep = bleepPoints[index + 1];
 
-    var SAFETY_BUFFER = 300;
+    var SAFETY_BUFFER = 150;
 
     var targetTime = nextBleep
       ? nextBleep.time
