@@ -930,16 +930,13 @@ function doBleep(bleep, index) {
   if (isMobile()) {
     var nextBleep = bleepPoints[index + 1];
 
-  var targetTime = nextBleep
-    ? nextBleep.time
-    : bleep.time + 400;
+  if (nextBleep) {
+    // VERY SMALL forward move (prevents stalling, not skipping)
+    var smallStep = 50; // 50ms
 
-  var skipTo = targetTime;
+    player.seek(posMs + smallStep);
+  }
 
-  // prevent going backwards
-  skipTo = Math.max(bleep.time, skipTo);
-
-  player.seek(skipTo);
   return;
   }
   
