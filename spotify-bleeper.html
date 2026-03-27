@@ -903,7 +903,7 @@ function highlightLine(posMs) {
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
-  var EARLY_TRIGGER = isMobile() ? 800 : 600;
+  var EARLY_TRIGGER = isMobile() ? 700 : 600;
 
   for (let i = 0; i < bleepPoints.length; i++) {
     let bleep = bleepPoints[i];
@@ -930,18 +930,17 @@ function doBleep(bleep, index) {
   if (isMobile()) {
     var nextBleep = bleepPoints[index + 1];
 
-    var SAFETY_BUFFER = 300;
+  var targetTime = nextBleep
+    ? nextBleep.time
+    : bleep.time + 400;
 
-    var targetTime = nextBleep
-      ? nextBleep.time
-      : bleep.time + 400;
+  var skipTo = targetTime;
 
-    var skipTo = targetTime + SAFETY_BUFFER;
+  // prevent going backwards
+  skipTo = Math.max(bleep.time, skipTo);
 
-    skipTo = Math.max(bleep.time, skipTo);
-
-    player.seek(skipTo);
-    return;
+  player.seek(skipTo);
+  return;
   }
   
   // 🖥 DESKTOP → volume mute (smoother, no seek)
