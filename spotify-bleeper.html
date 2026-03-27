@@ -932,13 +932,9 @@ function doBleep(bleep, index) {
 
     var SAFETY_BUFFER = 150;
 
-    var targetTime = nextBleep
-      ? nextBleep.time
-      : bleep.time + 400;
+    var targetTime = bleep.time + 400;
 
     var skipTo = targetTime + SAFETY_BUFFER;
-
-    skipTo = Math.max(bleep.time, skipTo);
 
     player.seek(skipTo);
     return;
