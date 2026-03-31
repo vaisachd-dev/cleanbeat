@@ -903,7 +903,7 @@ function highlightLine(posMs) {
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
-  var EARLY_TRIGGER = isMobile() ? 650 : 600;
+  var EARLY_TRIGGER = isMobile() ? 750 : 600;
 
   for (let i = 0; i < bleepPoints.length; i++) {
     let bleep = bleepPoints[i];
@@ -928,30 +928,10 @@ function doBleep(bleep, index) {
 
   // 📱 MOBILE → seek-based skipping (most reliable)
   if (isMobile()) {
+    var skipTo = bleep.time + 200;
 
-        var bleep = bleepPoints[index];
-  var nextBleep = bleepPoints[index + 1];
-
-  var currentTime = player.getCurrentTime
-    ? player.getCurrentTime() * 1000
-    : 0;
-
-  var skipTo = bleep.time + 300;
-
-  // Only trigger when we reach the bleep
-  if (currentTime < bleep.time) return;
-
-  // Prevent unnecessary seeks
-  if (Math.abs(skipTo - currentTime) < 80) return;
-
-  // Prevent overlap
-  if (nextBleep && skipTo > nextBleep.time - 100) {
-    skipTo = nextBleep.time + 300;
-  }
-
-  console.log("SEEKING TO:", skipTo);
-
-  player.seek(skipTo / 1000);
+    player.seek(skipTo);
+    return;
   }
   
   // 🖥 DESKTOP → volume mute (smoother, no seek)
