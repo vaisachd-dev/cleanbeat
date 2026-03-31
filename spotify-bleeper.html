@@ -903,7 +903,7 @@ function highlightLine(posMs) {
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
-  var EARLY_TRIGGER = isMobile() ? 385 : 600;
+  var EARLY_TRIGGER = isMobile() ? 395 : 600;
 
   for (let i = 0; i < bleepPoints.length; i++) {
     let bleep = bleepPoints[i];
@@ -928,8 +928,33 @@ function doBleep(bleep, index) {
 
   // 📱 MOBILE → seek-based skipping (most reliable)
   if (isMobile()) {
-    var skipTo = bleep.time + 270;
+    var nextBleep = bleepPoints[index + 1];
 
+    var now = player.getCurrentTime
+      ? player.getCurrentTime() * 1000
+      : bleep.time;
+console.log('now is',now);
+    var BASE_SKIP = 280;     // stable minimum
+    var SAFETY_BUFFER = 80;  // prevents re-trigger overlap
+
+    var skipTo;
+
+    if (nextBleep) {
+      var gap = nextBleep.time - bleep.time;
+
+      // Adaptive skip: proportional but capped
+      var adaptiveSkip = bleep.time + Math.min(gap * 0.5, 450);
+
+      skipTo = Math.max(adaptiveSkip, bleep.time + BASE_SKIP);
+    } else {
+      skipTo = bleep.time + BASE_SKIP;
+    }
+
+    // Prevent going backwards or stalling
+    if (skipTo < now + SAFETY_BUFFER) {
+      skipTo = now + SAFETY_BUFFER;
+    }
+console.log('skipTo is', skipTo);
     player.seek(skipTo);
     return;
   }
