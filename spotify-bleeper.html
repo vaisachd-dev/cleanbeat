@@ -929,12 +929,27 @@ function doBleep(bleep, index) {
 
   // 📱 MOBILE → seek-based skipping (most reliable)
   if (isMobile()) {
+
     var nextBleep = bleepPoints[index + 1];
 
-    var skipTo = bleep.time + 300;
+  var currentTime = player.getCurrentTime
+    ? player.getCurrentTime() * 1000
+    : 0;
 
-    player.seek(skipTo);
+  var skipTo = bleep.time + 300;
+
+  // Prevent going backwards
+  if (skipTo <= currentTime) {
     return;
+  }
+
+  // Prevent overlapping with next bleep
+  if (nextBleep && skipTo > nextBleep.time - 100) {
+    skipTo = nextBleep.time + 300;
+  }
+
+  player.seek(skipTo / 1000);
+  return;
   }
   
   // 🖥 DESKTOP → volume mute (smoother, no seek)
