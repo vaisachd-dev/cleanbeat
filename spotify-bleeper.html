@@ -631,8 +631,8 @@ function prevTrack() { if (!isDemoMode && player) player.previousTrack(); }
 function nextTrack() { if (!isDemoMode && player) player.nextTrack(); }
 
 function setVol(v) {
-  userVolume = v / 100;
-  if (!isDemoMode && player) player.setVolume(userVolume);
+  userVolume = parseInt(v);
+  setSpotifyVolume(userVolume);
 }
 
 // ─────────────────────────────────────────
@@ -923,6 +923,24 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
+// ─────────────────────────────────────────
+// VOLUME CONTROL — unified desktop + mobile
+// Desktop  → SDK setVolume() (instant, in-browser)
+// Mobile   → Spotify Connect API PUT /v1/me/player/volume (~300ms latency but works)
+// ─────────────────────────────────────────
+async function setSpotifyVolume(pct) {
+  // pct = 0–100 integer
+  if (isDemoMode) return;
+
+  // Mobile: use Connect API
+  var tok = await getToken();
+  if (!tok) return;
+  await fetch('https://api.spotify.com/v1/me/player/volume?volume_percent=' + Math.round(pct), {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer ' + tok }
+  });
+}
+  
 function doBleep(bleep, index) {
   if (!player) return;
 
