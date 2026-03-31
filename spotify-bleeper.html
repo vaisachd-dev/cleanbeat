@@ -943,7 +943,7 @@ console.log('now is',now);
       var gap = nextBleep.time - bleep.time;
 
       // Adaptive skip: proportional but capped
-      var adaptiveSkip = bleep.time + Math.min(gap * 0.5, 450);
+      var adaptiveSkip = bleep.time + Math.min(gap * 0.55, 450);
 
       skipTo = Math.max(adaptiveSkip, bleep.time + BASE_SKIP);
     } else {
