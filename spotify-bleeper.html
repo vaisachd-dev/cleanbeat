@@ -929,7 +929,7 @@ function doBleep(bleep, index) {
   // 📱 MOBILE → seek-based skipping (most reliable)
   if (isMobile()) {
 
-      var bleep = bleepPoints[index];
+        var bleep = bleepPoints[index];
   var nextBleep = bleepPoints[index + 1];
 
   var currentTime = player.getCurrentTime
@@ -938,34 +938,19 @@ function doBleep(bleep, index) {
 
   var skipTo = bleep.time + 300;
 
-  // -----------------------------
-  // 1. Only trigger when we CROSS the bleep time
-  // -----------------------------
+  // Only trigger when we reach the bleep
   if (currentTime < bleep.time) return;
 
-  // -----------------------------
-  // 2. Prevent re-triggering same bleep
-  // -----------------------------
-  if (window.__lastProcessedBleepIndex === index) return;
-
-  // -----------------------------
-  // 3. Mark AFTER confirming we should act
-  // -----------------------------
-  window.__lastProcessedBleepIndex = index;
-
-  // -----------------------------
-  // 4. Prevent redundant seeks
-  // -----------------------------
+  // Prevent unnecessary seeks
   if (Math.abs(skipTo - currentTime) < 80) return;
 
-  // -----------------------------
-  // 5. Avoid overlap with next bleep
-  // -----------------------------
+  // Prevent overlap
   if (nextBleep && skipTo > nextBleep.time - 100) {
     skipTo = nextBleep.time + 300;
   }
 
-  console.log(skipTo);  
+  console.log("SEEKING TO:", skipTo);
+
   player.seek(skipTo / 1000);
   }
   
