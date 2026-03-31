@@ -928,7 +928,7 @@ function doBleep(bleep, index) {
 
   // 📱 MOBILE → seek-based skipping (most reliable)
   if (isMobile()) {
-    var skipTo = bleep.time + 150;
+    var skipTo = bleep.time + 200;
 
     player.seek(skipTo);
     return;
