@@ -948,7 +948,6 @@ function doBleep(bleep, index) {
   if (isMobile()) {
 
     setSpotifyVolume(0).then(function() {
-    if (mode === 'bleep') playBleepTone();
     // Restore volume after 750ms
     setTimeout(function() {
       setSpotifyVolume(userVolume).then(function() {
