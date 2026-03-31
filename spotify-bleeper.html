@@ -935,30 +935,30 @@ function doBleep(bleep, index) {
     ? player.getCurrentTime() * 1000
     : 0;
 
-  var bleepTime = bleep.time;
+  var skipTo = bleep.time + 300;
 
   // -----------------------------
-  // ONLY TRIGGER WHEN CROSSING INTO BLEEP WINDOW
+  // 1. Already handled this bleep
   // -----------------------------
-  var prevTime = window.__lastCurrentTime || 0;
-  window.__lastCurrentTime = currentTime;
-
-  // If we already passed this bleep → do nothing
-  if (currentTime < bleepTime || prevTime >= bleepTime) {
-    return;
-  }
-
-  var skipTo = bleepTime + 300;
+  if (window.__lastProcessedBleepIndex === index) return;
 
   // -----------------------------
-  // Prevent backward or redundant seeks
+  // 2. Only trigger when we reach the bleep time
   // -----------------------------
-  if (Math.abs(skipTo - currentTime) < 100) {
-    return;
-  }
+  if (currentTime < bleep.time) return;
 
   // -----------------------------
-  // Avoid overlapping into next bleep
+  // 3. Mark BEFORE seeking (prevents re-entry)
+  // -----------------------------
+  window.__lastProcessedBleepIndex = index;
+
+  // -----------------------------
+  // 4. Prevent backward / redundant seeks
+  // -----------------------------
+  if (Math.abs(skipTo - currentTime) < 80) return;
+
+  // -----------------------------
+  // 5. Avoid overlap with next bleep
   // -----------------------------
   if (nextBleep && skipTo > nextBleep.time - 100) {
     skipTo = nextBleep.time + 300;
