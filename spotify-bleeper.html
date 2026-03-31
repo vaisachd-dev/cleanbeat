@@ -614,7 +614,7 @@ function startPosTracking() {
     updateProgress(pos, state.duration);
     if (lyricsMode === 'synced') checkBleeps(pos);
     highlightLine(pos);
-  }, 100);
+  }, 50);
 }  
 
 function stopPosTracking() {
@@ -903,7 +903,7 @@ function highlightLine(posMs) {
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
-  var EARLY_TRIGGER = isMobile() ? 395 : 600;
+  var EARLY_TRIGGER = isMobile() ? 410 : 600;
 
   for (let i = 0; i < bleepPoints.length; i++) {
     let bleep = bleepPoints[i];
@@ -955,7 +955,7 @@ console.log('now is',now);
       skipTo = now + SAFETY_BUFFER;
     }
 console.log('skipTo is', skipTo);
-    player.seek(skipTo);
+    player.seek(skipTo + 40);
     return;
   }
   
