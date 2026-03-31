@@ -903,7 +903,7 @@ function highlightLine(posMs) {
 // ─────────────────────────────────────────
 // Improved timing: estimates word position within line for accurate bleeping
 function checkBleeps(posMs) {
-  var EARLY_TRIGGER = isMobile() ? 400 : 600;
+  var EARLY_TRIGGER = isMobile() ? 385 : 600;
 
   for (let i = 0; i < bleepPoints.length; i++) {
     let bleep = bleepPoints[i];
@@ -928,7 +928,7 @@ function doBleep(bleep, index) {
 
   // 📱 MOBILE → seek-based skipping (most reliable)
   if (isMobile()) {
-    var skipTo = bleep.time + 250;
+    var skipTo = bleep.time + 270;
 
     player.seek(skipTo);
     return;
