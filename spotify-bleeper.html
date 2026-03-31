@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <audio id="bleepAudio" preload="auto">
@@ -938,6 +937,14 @@ function doBleep(bleep, index) {
 
   var skipTo = bleep.time + 300;
 
+  // ❗ NEW: prevent re-processing same bleep
+  if (window.__lastProcessedBleepIndex === index) {
+    return;
+  }
+
+  // ❗ Mark as processed BEFORE seeking
+  window.__lastProcessedBleepIndex = index;
+
   // Prevent going backwards
   if (skipTo <= currentTime) {
     return;
@@ -949,7 +956,6 @@ function doBleep(bleep, index) {
   }
 
   player.seek(skipTo / 1000);
-  return;
   }
   
   // 🖥 DESKTOP → volume mute (smoother, no seek)
