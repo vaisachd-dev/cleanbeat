@@ -935,22 +935,31 @@ function doBleep(bleep, index) {
     ? player.getCurrentTime() * 1000
     : 0;
 
-  var skipTo = bleep.time + 300;
+  var bleepTime = bleep.time;
 
-  // ❗ NEW: prevent re-processing same bleep
-  if (window.__lastProcessedBleepIndex === index) {
+  // -----------------------------
+  // ONLY TRIGGER WHEN CROSSING INTO BLEEP WINDOW
+  // -----------------------------
+  var prevTime = window.__lastCurrentTime || 0;
+  window.__lastCurrentTime = currentTime;
+
+  // If we already passed this bleep → do nothing
+  if (currentTime < bleepTime || prevTime >= bleepTime) {
     return;
   }
 
-  // ❗ Mark as processed BEFORE seeking
-  window.__lastProcessedBleepIndex = index;
+  var skipTo = bleepTime + 300;
 
-  // Prevent going backwards
-  if (skipTo <= currentTime) {
+  // -----------------------------
+  // Prevent backward or redundant seeks
+  // -----------------------------
+  if (Math.abs(skipTo - currentTime) < 100) {
     return;
   }
 
-  // Prevent overlapping with next bleep
+  // -----------------------------
+  // Avoid overlapping into next bleep
+  // -----------------------------
   if (nextBleep && skipTo > nextBleep.time - 100) {
     skipTo = nextBleep.time + 300;
   }
